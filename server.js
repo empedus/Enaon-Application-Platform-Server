@@ -40,6 +40,7 @@ const getDataFromServiceNow = async (path, params, res) => {
 app.get("/auth", (req, res) => {
   try {
     const { user_email } = req.query;
+    if (!user_email) return res.status(400).json({ error: "Missing required parameter: user_email" });
     getDataFromServiceNow(process.env.AUTH_PATH, { user_email }, res);
   } catch (error) {
     console.error("Error in /auth endpoint:", error.message);
@@ -51,6 +52,7 @@ app.get("/auth", (req, res) => {
 app.get("/job-dispositions/get", (req, res) => {
   try {
     const { user_email, record_sys_id } = req.query;
+    if (!user_email || !record_sys_id) return res.status(400).json({ error: "Missing required parameters: user_email and/or record_sys_id" });
     getDataFromServiceNow(process.env.GET_SPECIFIC_ASSIGNMENT_PATH, { user_email, record_sys_id }, res);
   } catch (error) {
     console.error("Error in /job-dispositions/get endpoint:", error.message);
@@ -62,6 +64,7 @@ app.get("/job-dispositions/get", (req, res) => {
 app.get("/job-dispositions/get/all", (req, res) => {
   try {
     const { user_email } = req.query;
+    if (!user_email) return res.status(400).json({ error: "Missing required parameter: user_email" });
     getDataFromServiceNow(process.env.ALL_ASSIGNMENTS_PATH, { user_email }, res);
   } catch (error) {
     console.error("Error in /job-dispositions/get/all endpoint:", error.message);
@@ -73,6 +76,7 @@ app.get("/job-dispositions/get/all", (req, res) => {
 app.put("/update-job-disposition", async (req, res) => {
   try {
     const { user_email, record_sys_id } = req.query;
+    if (!user_email || !record_sys_id) return res.status(400).json({ error: "Missing required parameters: user_email and/or record_sys_id" });
     const apiUrl = `${servicenowBaseURL}${process.env.UPDATE_JOB_DISPOSITION_PATH}`;
     console.log("Making request to:", apiUrl, "with query params:", { user_email, record_sys_id }, "and body:", req.body);
 
@@ -97,7 +101,6 @@ app.get("/work-types", (req, res) => {
     res.status(500).json({ error: "Failed to fetch work types" });
   }
 });
-
 
 // 6. Helper API to list available endpoints
 app.get("/helper", (req, res) => {

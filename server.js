@@ -40,7 +40,7 @@ const getDataFromServiceNow = async (path, params, res) => {
 app.get("/auth", (req, res) => {
   try {
     const { user_email } = req.query;
-    if (!user_email) return res.status(400).json({ error: "Missing required parameter: user_email" });
+    if (!user_email) return res.status(400).json({ error: "Missing required parameter: user_email geia sas" });
     getDataFromServiceNow(process.env.AUTH_PATH, { user_email }, res);
   } catch (error) {
     console.error("Error in /auth endpoint:", error.message);

@@ -1,6 +1,7 @@
 require("dotenv").config({ path: "./.env" });
 const express = require("express");
 const axios = require("axios");
+const { generateToken } = require('./jwtUtils');  // Import the generateToken function
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -14,34 +15,63 @@ const auth = {
 };
 
 // Helper function to make GET requests
-const getDataFromServiceNow = async (path, params, res) => {
+const getDataFromServiceNow = async (path, params) => {
   try {
     if (!servicenowBaseURL || !path) {
       console.error("Error: Missing base URL or path");
-      return res.status(500).json({ error: "Server misconfiguration: Missing URL or path" });
+      return { error: "Server misconfiguration: Missing URL or path" };  // Return error object instead of sending response
     }
-    
+
     const apiUrl = `${servicenowBaseURL}${path}`;
     console.log("Making request to:", apiUrl, "with params:", params);
-    
+
     const response = await axios.get(apiUrl, {
       auth,
       headers: { "Content-Type": "application/json" },
       params,
     });
-    res.json(response.data);
+    console.log('ServiceNow Response: ' + JSON.stringify(response.data));
+
+    return response.data;  // Return data instead of sending response here
   } catch (error) {
     console.error("Error fetching data from", path, ":", error.message);
-    res.status(error.response?.status || 500).json({ error: "Failed to fetch data from ServiceNow" });
+    return { error: "Failed to fetch data from ServiceNow" };  // Return error object
   }
 };
 
-// 1. Authenticate user
-app.get("/auth", (req, res) => {
+//1. Authorize user, Get Accessible Apps, and Generate JWT Token
+app.get("/user_auth", async (req, res) => {
   try {
     const { user_email } = req.query;
     if (!user_email) return res.status(400).json({ error: "Missing required parameter: user_email geia sas" });
-    getDataFromServiceNow(process.env.AUTH_PATH, { user_email }, res);
+
+    const serviceNowResponse = await getDataFromServiceNow(process.env.AUTH_PATH, { user_email });
+
+    if (!serviceNowResponse || !serviceNowResponse.result) {
+      return res.status(500).json({ error: "ServiceNow response format is invalid" });
+    }
+
+    const accessibleApps = serviceNowResponse.result.accessible_apps;
+
+    if (!Array.isArray(accessibleApps)) {
+      return res.status(500).json({ error: "Accessible apps should be an array" });
+    }
+
+    const jwtPayload = {
+      user_email: serviceNowResponse.result.user_email[0],
+      accessible_apps: accessibleApps,
+    };
+
+    //Generate the JWT token
+    const token = generateToken(jwtPayload);
+
+    res.json({
+      result: {
+        serviceNowData: serviceNowResponse.result,  
+        token,  
+      },
+    });
+
   } catch (error) {
     console.error("Error in /auth endpoint:", error.message);
     res.status(500).json({ error: "Failed to authenticate user" });
@@ -49,11 +79,19 @@ app.get("/auth", (req, res) => {
 });
 
 // 2. Get specific job assignments for a user
-app.get("/job-dispositions/get", (req, res) => {
+app.get("/meter_app/job-dispositions/get", async (req, res) => {
   try {
     const { user_email, record_sys_id } = req.query;
     if (!user_email || !record_sys_id) return res.status(400).json({ error: "Missing required parameters: user_email and/or record_sys_id" });
-    getDataFromServiceNow(process.env.GET_SPECIFIC_ASSIGNMENT_PATH, { user_email, record_sys_id }, res);
+    
+    const serviceNowResponse = await getDataFromServiceNow(process.env.GET_SPECIFIC_ASSIGNMENT_PATH, { user_email, record_sys_id });
+
+    if (serviceNowResponse.error) {
+      return res.status(500).json({ error: serviceNowResponse.error });
+    }
+
+    res.json(serviceNowResponse);  // Send the fetched data to the client
+
   } catch (error) {
     console.error("Error in /job-dispositions/get endpoint:", error.message);
     res.status(500).json({ error: "Failed to fetch specific job assignment" });
@@ -61,11 +99,19 @@ app.get("/job-dispositions/get", (req, res) => {
 });
 
 // 3. Get all job assignments for a user
-app.get("/job-dispositions/get/all", (req, res) => {
+app.get("/meter_app/job-dispositions/get/all", async (req, res) => {
   try {
     const { user_email } = req.query;
     if (!user_email) return res.status(400).json({ error: "Missing required parameter: user_email" });
-    getDataFromServiceNow(process.env.ALL_ASSIGNMENTS_PATH, { user_email }, res);
+
+    const serviceNowResponse = await getDataFromServiceNow(process.env.ALL_ASSIGNMENTS_PATH, { user_email });
+
+    if (serviceNowResponse.error) {
+      return res.status(500).json({ error: serviceNowResponse.error });
+    }
+
+    res.json(serviceNowResponse);  // Send the fetched data to the client
+
   } catch (error) {
     console.error("Error in /job-dispositions/get/all endpoint:", error.message);
     res.status(500).json({ error: "Failed to fetch all job assignments" });
@@ -73,10 +119,11 @@ app.get("/job-dispositions/get/all", (req, res) => {
 });
 
 // 4. Update Job Assignment
-app.put("/update-job-disposition", async (req, res) => {
+app.put("/meter_app/update-job-disposition", async (req, res) => {
   try {
     const { user_email, record_sys_id } = req.query;
     if (!user_email || !record_sys_id) return res.status(400).json({ error: "Missing required parameters: user_email and/or record_sys_id" });
+    
     const apiUrl = `${servicenowBaseURL}${process.env.UPDATE_JOB_DISPOSITION_PATH}`;
     console.log("Making request to:", apiUrl, "with query params:", { user_email, record_sys_id }, "and body:", req.body);
 
@@ -86,6 +133,7 @@ app.put("/update-job-disposition", async (req, res) => {
       params: { user_email, record_sys_id },
     });
     res.json(response.data);
+
   } catch (error) {
     console.error("Error in /update-job-disposition endpoint:", error.message);
     res.status(error.response?.status || 500).json({ error: "Failed to update job assignment" });
@@ -93,9 +141,18 @@ app.put("/update-job-disposition", async (req, res) => {
 });
 
 // 5. Get all available Work Types
-app.get("/work-types", (req, res) => {
+app.get("/meter_app/work-types", async (req, res) => {
   try {
-    getDataFromServiceNow(process.env.WORK_TYPES_PATH, {}, res);
+    // Fetch available work types from ServiceNow
+    const serviceNowResponse = await getDataFromServiceNow(process.env.WORK_TYPES_PATH, {});
+
+    if (serviceNowResponse.error) {
+      return res.status(500).json({ error: serviceNowResponse.error });
+    }
+
+    // Return the fetched work types from ServiceNow to the client
+    res.json(serviceNowResponse);  // Send the fetched data to the client
+
   } catch (error) {
     console.error("Error in /work-types endpoint:", error.message);
     res.status(500).json({ error: "Failed to fetch work types" });
@@ -106,7 +163,7 @@ app.get("/work-types", (req, res) => {
 app.get("/helper", (req, res) => {
   res.json({
     endpoints: {
-      "/auth": "Authenticate a user with query param user_email",
+      "/user_auth": "Authenticate a user with query param user_email",
       "/job-dispositions/get": "Fetch a specific job assignment with query params user_email and record_sys_id",
       "/job-dispositions/get/all": "Fetch all job assignments for a user with query param user_email",
       "/update-job-disposition": "Update a job assignment with query params user_email, record_sys_id and request body containing update details",

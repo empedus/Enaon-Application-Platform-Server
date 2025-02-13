@@ -1,7 +1,7 @@
 require("dotenv").config({ path: "./.env" });
 const express = require("express");
 const axios = require("axios");
-const { generateToken } = require('./jwtUtils');  // Import the generateToken function
+const { generateToken, verifyToken } = require('./jwtUtils');  // Import the generateToken and verifyToken functions
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -12,6 +12,30 @@ const servicenowBaseURL = process.env.SERVICENOW_INSTANCE;
 const auth = {
   username: process.env.SERVICENOW_USER,
   password: process.env.SERVICENOW_PASS,
+};
+
+// Middleware to check for the Authorization token and verify "Meters App" in the accessible_apps
+const authorizeMeterApp = (req, res, next) => {
+  const token = req.headers.authorization?.split(" ")[1]; // Extract the token from Authorization header
+
+  if (!token) {
+    return res.status(401).json({ error: "Authorization token is required" });
+  }
+
+  try {
+    const decoded = verifyToken(token);  // Verify and decode the JWT token
+    const { accessible_apps } = decoded;
+
+    if (!accessible_apps || !accessible_apps.includes("Meters App")) {
+      return res.status(403).json({ error: "Access denied. 'Meters App' is required in accessible apps." });
+    }
+
+    req.user = decoded;  // Optionally attach the decoded token to the request object
+    next();  // Proceed to the next middleware/route handler
+  } catch (error) {
+    console.error("Token verification failed:", error.message);
+    return res.status(401).json({ error: "Invalid or expired token" });
+  }
 };
 
 // Helper function to make GET requests
@@ -39,11 +63,11 @@ const getDataFromServiceNow = async (path, params) => {
   }
 };
 
-//1. Authorize user, Get Accessible Apps, and Generate JWT Token
+// 1. Authorize user, Get Accessible Apps, and Generate JWT Token
 app.get("/user_auth", async (req, res) => {
   try {
     const { user_email } = req.query;
-    if (!user_email) return res.status(400).json({ error: "Missing required parameter: user_email geia sas" });
+    if (!user_email) return res.status(400).json({ error: "Missing required parameter: user_email" });
 
     const serviceNowResponse = await getDataFromServiceNow(process.env.AUTH_PATH, { user_email });
 
@@ -58,7 +82,7 @@ app.get("/user_auth", async (req, res) => {
     }
 
     const jwtPayload = {
-      user_email: serviceNowResponse.result.user_email[0],
+      user_email: serviceNowResponse.result.user_email[0], // assuming it's an array, take the first element
       accessible_apps: accessibleApps,
     };
 
@@ -73,13 +97,13 @@ app.get("/user_auth", async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Error in /auth endpoint:", error.message);
+    console.error("Error in /user_auth endpoint:", error.message);
     res.status(500).json({ error: "Failed to authenticate user" });
   }
 });
 
-// 2. Get specific job assignments for a user
-app.get("/meter_app/job-dispositions/get", async (req, res) => {
+// 2. Get specific job assignments for a user (with authorization middleware)
+app.get("/meter_app/job-dispositions/get", authorizeMeterApp, async (req, res) => {
   try {
     const { user_email, record_sys_id } = req.query;
     if (!user_email || !record_sys_id) return res.status(400).json({ error: "Missing required parameters: user_email and/or record_sys_id" });
@@ -98,8 +122,8 @@ app.get("/meter_app/job-dispositions/get", async (req, res) => {
   }
 });
 
-// 3. Get all job assignments for a user
-app.get("/meter_app/job-dispositions/get/all", async (req, res) => {
+// 3. Get all job assignments for a user (with authorization middleware)
+app.get("/meter_app/job-dispositions/get/all", authorizeMeterApp, async (req, res) => {
   try {
     const { user_email } = req.query;
     if (!user_email) return res.status(400).json({ error: "Missing required parameter: user_email" });
@@ -118,8 +142,8 @@ app.get("/meter_app/job-dispositions/get/all", async (req, res) => {
   }
 });
 
-// 4. Update Job Assignment
-app.put("/meter_app/update-job-disposition", async (req, res) => {
+// 4. Update Job Assignment (with authorization middleware)
+app.put("/meter_app/update-job-disposition", authorizeMeterApp, async (req, res) => {
   try {
     const { user_email, record_sys_id } = req.query;
     if (!user_email || !record_sys_id) return res.status(400).json({ error: "Missing required parameters: user_email and/or record_sys_id" });
@@ -140,8 +164,8 @@ app.put("/meter_app/update-job-disposition", async (req, res) => {
   }
 });
 
-// 5. Get all available Work Types
-app.get("/meter_app/work-types", async (req, res) => {
+// 5. Get all available Work Types (with authorization middleware)
+app.get("/meter_app/work-types", authorizeMeterApp, async (req, res) => {
   try {
     // Fetch available work types from ServiceNow
     const serviceNowResponse = await getDataFromServiceNow(process.env.WORK_TYPES_PATH, {});

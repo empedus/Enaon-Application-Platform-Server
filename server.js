@@ -103,7 +103,7 @@ app.get("/user_auth", async (req, res) => {
 });
 
 // 2. Get specific job assignments for a user (with authorization middleware)
-app.get("/meter_app/job-dispositions/get", authorizeMeterApp, async (req, res) => {
+app.get("/meter_app/job_dispositions/get", authorizeMeterApp, async (req, res) => {
   try {
     const { user_email, record_sys_id } = req.query;
     if (!user_email || !record_sys_id) return res.status(400).json({ error: "Missing required parameters: user_email and/or record_sys_id" });
@@ -123,7 +123,7 @@ app.get("/meter_app/job-dispositions/get", authorizeMeterApp, async (req, res) =
 });
 
 // 3. Get all job assignments for a user (with authorization middleware)
-app.get("/meter_app/job-dispositions/get/all", authorizeMeterApp, async (req, res) => {
+app.get("/meter_app/job_dispositions/get/all", authorizeMeterApp, async (req, res) => {
   try {
     const { user_email } = req.query;
     if (!user_email) return res.status(400).json({ error: "Missing required parameter: user_email" });
@@ -143,7 +143,7 @@ app.get("/meter_app/job-dispositions/get/all", authorizeMeterApp, async (req, re
 });
 
 // 4. Update Job Assignment (with authorization middleware)
-app.put("/meter_app/update-job-disposition", authorizeMeterApp, async (req, res) => {
+app.put("/meter_app/update_job_disposition", authorizeMeterApp, async (req, res) => {
   try {
     const { user_email, record_sys_id } = req.query;
     if (!user_email || !record_sys_id) return res.status(400).json({ error: "Missing required parameters: user_email and/or record_sys_id" });
@@ -165,7 +165,7 @@ app.put("/meter_app/update-job-disposition", authorizeMeterApp, async (req, res)
 });
 
 // 5. Get all available Work Types (with authorization middleware)
-app.get("/meter_app/work-types", authorizeMeterApp, async (req, res) => {
+app.get("/meter_app/work_types", authorizeMeterApp, async (req, res) => {
   try {
     // Fetch available work types from ServiceNow
     const serviceNowResponse = await getDataFromServiceNow(process.env.WORK_TYPES_PATH, {});
@@ -189,10 +189,10 @@ app.get("/helper", (req, res) => {
   res.json({
     endpoints: {
       "/user_auth": "Authenticate a user and generate a JWT token. Requires query param 'user_email'. Returns serviceNowData and JWT token.",
-      "/meter_app/job-dispositions/get": "Fetch a specific job assignment. Requires query params 'user_email' and 'record_sys_id'. **Authorization required with Bearer token in the request header from /user_auth.**",
-      "/meter_app/job-dispositions/get/all": "Fetch all job assignments for a user. Requires query param 'user_email'. **Authorization required with Bearer token in the request header from /user_auth.**",
-      "/meter_app/update-job-disposition": "Update a job assignment. Requires query params 'user_email' and 'record_sys_id' and a request body with update details. **Authorization required with Bearer token in the request header from /user_auth.**",
-      "/meter_app/work-types": "Retrieve all available work types. **Authorization required with Bearer token in the request header from /user_auth.**",
+      "/meter_app/job_dispositions/get": "Fetch a specific job assignment. Requires query params 'user_email' and 'record_sys_id'. **Authorization required with Bearer token in the request header from /user_auth.**",
+      "/meter_app/job_dispositions/get/all": "Fetch all job assignments for a user. Requires query param 'user_email'. **Authorization required with Bearer token in the request header from /user_auth.**",
+      "/meter_app/update_job_disposition": "Update a job assignment. Requires query params 'user_email' and 'record_sys_id' and a request body with update details. **Authorization required with Bearer token in the request header from /user_auth.**",
+      "/meter_app/work_types": "Retrieve all available work types. **Authorization required with Bearer token in the request header from /user_auth.**",
       "/helper": "Provides information about available API endpoints in the system."
     }
   });

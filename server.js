@@ -9,7 +9,7 @@ const port = process.env.PORT || 3000;
 
 app.use(express.json());
 
-const servicenowBaseURL = process.env.SERVICENOW_INSTANCE;
+const servicenowBaseURL = 'https://enaondev.service-now.com';
 const auth = {
   username: process.env.SERVICENOW_USER,
   password: process.env.SERVICENOW_PASS,

@@ -65,7 +65,7 @@ const getDataFromServiceNow = async (path, params) => {
 };
 
 // 1. Authenticate user and generate JWT token
-app.get("api/user_auth", async (req, res) => {
+app.get("/api/user_auth", async (req, res) => {
   try {
     const { user_email } = req.query;
     if (!user_email) return res.status(400).json({ error: "Missing required parameter: user_email" });
@@ -95,7 +95,7 @@ app.get("api/user_auth", async (req, res) => {
 });
 
 // 2. Get specific job assignment
-app.get("api/meter_app/job_dispositions/get", authorizeMeterApp, async (req, res) => {
+app.get("/api/meter_app/job_dispositions/get", authorizeMeterApp, async (req, res) => {
   try {
     const { user_email, record_sys_id } = req.query;
     if (!user_email || !record_sys_id) return res.status(400).json({ error: "Missing required parameters: user_email and/or record_sys_id" });
@@ -114,7 +114,7 @@ app.get("api/meter_app/job_dispositions/get", authorizeMeterApp, async (req, res
 });
 
 // 3. Get all job assignments
-app.get("api/meter_app/job_dispositions/get/all", authorizeMeterApp, async (req, res) => {
+app.get("/api/meter_app/job_dispositions/get/all", authorizeMeterApp, async (req, res) => {
   try {
     const { user_email } = req.query;
     if (!user_email) return res.status(400).json({ error: "Missing required parameter: user_email" });
@@ -133,7 +133,7 @@ app.get("api/meter_app/job_dispositions/get/all", authorizeMeterApp, async (req,
 });
 
 // 4. Update job assignment
-app.put("api/meter_app/update_job_disposition", authorizeMeterApp, async (req, res) => {
+app.put("/api/meter_app/update_job_disposition", authorizeMeterApp, async (req, res) => {
   try {
     const { user_email, record_sys_id } = req.query;
     if (!user_email || !record_sys_id) return res.status(400).json({ error: "Missing required parameters: user_email and/or record_sys_id" });
@@ -159,7 +159,7 @@ app.put("api/meter_app/update_job_disposition", authorizeMeterApp, async (req, r
 });
 
 // 5. Get available work types
-app.get("api/meter_app/work_types", authorizeMeterApp, async (req, res) => {
+app.get("/api/meter_app/work_types", authorizeMeterApp, async (req, res) => {
   try {
     const serviceNowResponse = await getDataFromServiceNow(ENDPOINTS.WORK_TYPES_PATH, {});
 
@@ -175,7 +175,7 @@ app.get("api/meter_app/work_types", authorizeMeterApp, async (req, res) => {
 });
 
 // 6. Helper API to list available endpoints
-app.get("api/helper", (req, res) => {
+app.get("/api/helper", (req, res) => {
   try {
     res.json({
       endpoints: {

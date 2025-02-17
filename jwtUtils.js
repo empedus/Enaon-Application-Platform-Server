@@ -6,7 +6,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your_default_secret_key'; // Use y
 
 // Function to generate a JWT token with a payload
 const generateToken = (payload) => {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' }); // Token expires in 1 hour
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' }); // Token expires in 1 hour
 };
 
 // Function to verify a JWT token and handle errors appropriately

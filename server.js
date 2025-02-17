@@ -15,6 +15,8 @@ const auth = {
   password: process.env.SERVICENOW_PASS,
 };
 
+
+// Auth function for Meters App required
 const authorizeMeterApp = (req, res, next) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
@@ -27,6 +29,30 @@ const authorizeMeterApp = (req, res, next) => {
 
     if (!accessible_apps || !accessible_apps.includes("Meters App")) {
       return res.status(403).json({ error: "Access denied. 'Meters App' is required in accessible apps." });
+    }
+
+    req.user = decoded;
+    next();
+  } catch (error) {
+    console.error("Token verification failed:", error.message);
+    return res.status(401).json({ error: "Invalid or expired token" });
+  }
+};
+
+// Auth function for Meters App or Maintenance App required
+const authorizeMeterAppOrMaintenanceApp = (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ error: "Authorization token is required" });
+    }
+
+    const decoded = verifyToken(token);
+    const { accessible_apps } = decoded;
+
+    // Check if the user has access to either "Meters App" or "Maintenance App"
+    if (!accessible_apps || (!accessible_apps.includes("Meters App") && !accessible_apps.includes("Maintenance App"))) {
+      return res.status(403).json({ error: "Access denied. 'Meters App' or 'Maintenance App' is required in accessible apps." });
     }
 
     req.user = decoded;
@@ -174,8 +200,10 @@ app.get("/api/meter_app/work_types", authorizeMeterApp, async (req, res) => {
   }
 });
 
-// 6. Get available vehicles
-app.get("/api/vehicles", authorizeMeterApp, async (req, res) => {
+
+
+// 6. Get Available Vehicles
+app.get("/api/vehicles", authorizeMeterAppOrMaintenanceApp, async (req, res) => {
   try {
     const serviceNowResponse = await getDataFromServiceNow(ENDPOINTS.VEHICLES_PATH, {});
 
@@ -189,6 +217,7 @@ app.get("/api/vehicles", authorizeMeterApp, async (req, res) => {
     res.status(500).json({ error: "Failed to fetch vehicles" });
   }
 });
+
 
 // 7. Helper API to list available endpoints
 app.get("/api/helper", (req, res) => {

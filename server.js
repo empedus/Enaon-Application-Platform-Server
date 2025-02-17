@@ -2,6 +2,7 @@ require("dotenv").config({ path: "./.env" });
 const express = require("express");
 const axios = require("axios");
 const { generateToken, verifyToken } = require("./jwtUtils");
+const ENDPOINTS = require("./endpoints");
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -14,11 +15,9 @@ const auth = {
   password: process.env.SERVICENOW_PASS,
 };
 
-// Middleware to check for the Authorization token and verify "Meters App" in the accessible_apps
 const authorizeMeterApp = (req, res, next) => {
   try {
-    const token = req.headers.authorization?.split(" ")[1]; // Extract the token from Authorization header
-
+    const token = req.headers.authorization?.split(" ")[1];
     if (!token) {
       return res.status(401).json({ error: "Authorization token is required" });
     }
@@ -38,7 +37,6 @@ const authorizeMeterApp = (req, res, next) => {
   }
 };
 
-// Helper function to make GET requests
 const getDataFromServiceNow = async (path, params) => {
   try {
     if (!servicenowBaseURL || !path) {
@@ -66,13 +64,12 @@ const getDataFromServiceNow = async (path, params) => {
   }
 };
 
-// 1. Authenticate user and generate JWT token
 app.get("/user_auth", async (req, res) => {
   try {
     const { user_email } = req.query;
     if (!user_email) return res.status(400).json({ error: "Missing required parameter: user_email" });
 
-    const serviceNowResponse = await getDataFromServiceNow(process.env.AUTH_PATH, { user_email });
+    const serviceNowResponse = await getDataFromServiceNow(ENDPOINTS.AUTH_PATH, { user_email });
 
     if (serviceNowResponse.error) {
       return res.status(serviceNowResponse.status || 500).json({ error: serviceNowResponse.error });
@@ -84,12 +81,11 @@ app.get("/user_auth", async (req, res) => {
     }
 
     const jwtPayload = {
-      user_email: serviceNowResponse.result.user_email[0], // assuming it's an array, take the first element
+      user_email: serviceNowResponse.result.user_email[0],
       accessible_apps: accessibleApps,
     };
 
     const token = generateToken(jwtPayload);
-
     res.json({ result: { serviceNowData: serviceNowResponse.result, token } });
   } catch (error) {
     console.error("Error in /user_auth:", error.message);
@@ -97,13 +93,12 @@ app.get("/user_auth", async (req, res) => {
   }
 });
 
-// 2. Get specific job assignment
 app.get("/meter_app/job_dispositions/get", authorizeMeterApp, async (req, res) => {
   try {
     const { user_email, record_sys_id } = req.query;
     if (!user_email || !record_sys_id) return res.status(400).json({ error: "Missing required parameters: user_email and/or record_sys_id" });
 
-    const serviceNowResponse = await getDataFromServiceNow(process.env.GET_SPECIFIC_ASSIGNMENT_PATH, { user_email, record_sys_id });
+    const serviceNowResponse = await getDataFromServiceNow(ENDPOINTS.GET_SPECIFIC_ASSIGNMENT_PATH, { user_email, record_sys_id });
 
     if (serviceNowResponse.error) {
       return res.status(serviceNowResponse.status || 500).json({ error: serviceNowResponse.error });
@@ -116,13 +111,12 @@ app.get("/meter_app/job_dispositions/get", authorizeMeterApp, async (req, res) =
   }
 });
 
-// 3. Get all job assignments
 app.get("/meter_app/job_dispositions/get/all", authorizeMeterApp, async (req, res) => {
   try {
     const { user_email } = req.query;
     if (!user_email) return res.status(400).json({ error: "Missing required parameter: user_email" });
 
-    const serviceNowResponse = await getDataFromServiceNow(process.env.ALL_ASSIGNMENTS_PATH, { user_email });
+    const serviceNowResponse = await getDataFromServiceNow(ENDPOINTS.ALL_ASSIGNMENTS_PATH, { user_email });
 
     if (serviceNowResponse.error) {
       return res.status(serviceNowResponse.status || 500).json({ error: serviceNowResponse.error });
@@ -135,13 +129,12 @@ app.get("/meter_app/job_dispositions/get/all", authorizeMeterApp, async (req, re
   }
 });
 
-// 4. Update job assignment
 app.put("/meter_app/update_job_disposition", authorizeMeterApp, async (req, res) => {
   try {
     const { user_email, record_sys_id } = req.query;
     if (!user_email || !record_sys_id) return res.status(400).json({ error: "Missing required parameters: user_email and/or record_sys_id" });
 
-    const apiUrl = `${servicenowBaseURL}${process.env.UPDATE_JOB_DISPOSITION_PATH}`;
+    const apiUrl = `${servicenowBaseURL}${ENDPOINTS.UPDATE_JOB_DISPOSITION_PATH}`;
     console.log("Making request to:", apiUrl, "with query params:", { user_email, record_sys_id }, "and body:", req.body);
 
     const response = await axios.put(apiUrl, req.body, {
@@ -161,42 +154,6 @@ app.put("/meter_app/update_job_disposition", authorizeMeterApp, async (req, res)
   }
 });
 
-// 5. Get available work types
-app.get("/meter_app/work_types", authorizeMeterApp, async (req, res) => {
-  try {
-    const serviceNowResponse = await getDataFromServiceNow(process.env.WORK_TYPES_PATH, {});
-
-    if (serviceNowResponse.error) {
-      return res.status(serviceNowResponse.status || 500).json({ error: serviceNowResponse.error });
-    }
-
-    res.json(serviceNowResponse);
-  } catch (error) {
-    console.error("Error in /work_types:", error.message);
-    res.status(500).json({ error: "Failed to fetch work types" });
-  }
-});
-
-// 6. Helper API to list available endpoints
-app.get("/helper", (req, res) => {
-  try {
-    res.json({
-      endpoints: {
-        "/user_auth": "Authenticate a user and generate a JWT token. Requires query param 'user_email'.",
-        "/meter_app/job_dispositions/get": "Fetch a specific job assignment. Requires query params 'user_email' and 'record_sys_id'. Authorization required.",
-        "/meter_app/job_dispositions/get/all": "Fetch all job assignments for a user. Requires query param 'user_email'. Authorization required.",
-        "/meter_app/update_job_disposition": "Update a job assignment. Requires query params 'user_email' and 'record_sys_id'. Authorization required.",
-        "/meter_app/work_types": "Retrieve all available work types. Authorization required.",
-        "/helper": "Provides information about available API endpoints.",
-      },
-    });
-  } catch (error) {
-    console.error("Error in /helper:", error.message);
-    res.status(500).json({ error: "Failed to retrieve endpoint information" });
-  }
-});
-
-// Start server
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });

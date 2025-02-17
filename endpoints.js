@@ -3,7 +3,8 @@ const ENDPOINTS = {
     GET_SPECIFIC_ASSIGNMENT_PATH: "/api/x_eedat_meters_app/meter_app/job_dispositions/get",
     ALL_ASSIGNMENTS_PATH: "/api/x_eedat_meters_app/meter_app/job_dispositions/get/all",
     AUTH_PATH: "/api/x_eedat_meters_app/user_auth",
-    UPDATE_JOB_DISPOSITION_PATH: "/api/x_eedat_meters_app/meter_app/job_dispositions/update"
+    UPDATE_JOB_DISPOSITION_PATH: "/api/x_eedat_meters_app/meter_app/job_dispositions/update",
+    VEHICLES_PATH: "/api/x_eedat_meters_app/vehicles/get/all"
   };
   
   module.exports = ENDPOINTS;

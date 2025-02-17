@@ -174,7 +174,23 @@ app.get("/api/meter_app/work_types", authorizeMeterApp, async (req, res) => {
   }
 });
 
-// 6. Helper API to list available endpoints
+// 6. Get available vehicles
+app.get("/api/vehicles", authorizeMeterApp, async (req, res) => {
+  try {
+    const serviceNowResponse = await getDataFromServiceNow(ENDPOINTS.VEHICLES_PATH, {});
+
+    if (serviceNowResponse.error) {
+      return res.status(serviceNowResponse.status || 500).json({ error: serviceNowResponse.error });
+    }
+
+    res.json(serviceNowResponse);
+  } catch (error) {
+    console.error("Error in /vehicles:", error.message);
+    res.status(500).json({ error: "Failed to fetch vehicles" });
+  }
+});
+
+// 7. Helper API to list available endpoints
 app.get("/api/helper", (req, res) => {
   try {
     res.json({

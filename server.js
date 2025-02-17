@@ -64,7 +64,8 @@ const getDataFromServiceNow = async (path, params) => {
   }
 };
 
-app.get("/user_auth", async (req, res) => {
+// 1. Authenticate user and generate JWT token
+app.get("api/user_auth", async (req, res) => {
   try {
     const { user_email } = req.query;
     if (!user_email) return res.status(400).json({ error: "Missing required parameter: user_email" });
@@ -93,7 +94,8 @@ app.get("/user_auth", async (req, res) => {
   }
 });
 
-app.get("/meter_app/job_dispositions/get", authorizeMeterApp, async (req, res) => {
+// 2. Get specific job assignment
+app.get("api/meter_app/job_dispositions/get", authorizeMeterApp, async (req, res) => {
   try {
     const { user_email, record_sys_id } = req.query;
     if (!user_email || !record_sys_id) return res.status(400).json({ error: "Missing required parameters: user_email and/or record_sys_id" });
@@ -111,7 +113,8 @@ app.get("/meter_app/job_dispositions/get", authorizeMeterApp, async (req, res) =
   }
 });
 
-app.get("/meter_app/job_dispositions/get/all", authorizeMeterApp, async (req, res) => {
+// 3. Get all job assignments
+app.get("api/meter_app/job_dispositions/get/all", authorizeMeterApp, async (req, res) => {
   try {
     const { user_email } = req.query;
     if (!user_email) return res.status(400).json({ error: "Missing required parameter: user_email" });
@@ -129,7 +132,8 @@ app.get("/meter_app/job_dispositions/get/all", authorizeMeterApp, async (req, re
   }
 });
 
-app.put("/meter_app/update_job_disposition", authorizeMeterApp, async (req, res) => {
+// 4. Update job assignment
+app.put("api/meter_app/update_job_disposition", authorizeMeterApp, async (req, res) => {
   try {
     const { user_email, record_sys_id } = req.query;
     if (!user_email || !record_sys_id) return res.status(400).json({ error: "Missing required parameters: user_email and/or record_sys_id" });
@@ -151,6 +155,41 @@ app.put("/meter_app/update_job_disposition", authorizeMeterApp, async (req, res)
   } catch (error) {
     console.error("Error in /update_job_disposition:", error.message);
     res.status(error.response?.status || 500).json({ error: "Failed to update job assignment" });
+  }
+});
+
+// 5. Get available work types
+app.get("api/meter_app/work_types", authorizeMeterApp, async (req, res) => {
+  try {
+    const serviceNowResponse = await getDataFromServiceNow(ENDPOINTS.WORK_TYPES_PATH, {});
+
+    if (serviceNowResponse.error) {
+      return res.status(serviceNowResponse.status || 500).json({ error: serviceNowResponse.error });
+    }
+
+    res.json(serviceNowResponse);
+  } catch (error) {
+    console.error("Error in /work_types:", error.message);
+    res.status(500).json({ error: "Failed to fetch work types" });
+  }
+});
+
+// 6. Helper API to list available endpoints
+app.get("api/helper", (req, res) => {
+  try {
+    res.json({
+      endpoints: {
+        "api/user_auth": "Authenticate a user and generate a JWT token. Requires query param 'user_email'.",
+        "api/meter_app/job_dispositions/get": "Fetch a specific job assignment. Requires query params 'user_email' and 'record_sys_id'. Authorization required.",
+        "api/meter_app/job_dispositions/get/all": "Fetch all job assignments for a user. Requires query param 'user_email'. Authorization required.",
+        "api/meter_app/update_job_disposition": "Update a job assignment. Requires query params 'user_email' and 'record_sys_id'. Authorization required.",
+        "api/meter_app/work_types": "Retrieve all available work types. Authorization required.",
+        "api/helper": "Provides information about available API endpoints.",
+      },
+    });
+  } catch (error) {
+    console.error("Error in /helper:", error.message);
+    res.status(500).json({ error: "Failed to retrieve endpoint information" });
   }
 });
 

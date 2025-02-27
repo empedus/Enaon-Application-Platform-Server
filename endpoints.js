@@ -4,7 +4,9 @@ const ENDPOINTS = {
     ALL_ASSIGNMENTS_PATH: "/api/x_eedat_meters_app/meter_app/job_dispositions/get/all",
     AUTH_PATH: "/api/x_eedat_meters_app/user_auth",
     UPDATE_JOB_DISPOSITION_PATH: "/api/x_eedat_meters_app/meter_app/job_dispositions/update",
-    VEHICLES_PATH: "/api/x_eedat_meters_app/vehicles/get/all"
+    VEHICLES_PATH: "/api/x_eedat_meters_app/vehicles/get/all",
+    GET_PDF_BASE64: "/api/x_eedat_meters_app/meter_app/get_pdf"
+
   };
   
   module.exports = ENDPOINTS;

@@ -245,7 +245,142 @@ function sanitizeFileName(fileName) {
     .trim();
 }
 
-// Main endpoint
+// // Generate pdf and Attach it in the right record in ServiceNow
+// app.get("/api/generate_pdf", async (req, res) => {
+//   try {
+//     const { user_email, record_sys_id } = req.query;
+//     if (!user_email || !record_sys_id) {
+//       return res.status(400).json({ error: "Missing required parameters: user_email, record_sys_id" });
+//     }
+
+//     console.log("Fetching PDF from ServiceNow...");
+
+//     // Fetch base64 PDF from ServiceNow
+//     const pdfResponse = await axios.get(`${servicenowBaseURL}${ENDPOINTS.GET_PDF_BASE64}`, {
+//       auth,
+//       headers: { "Content-Type": "application/json" },
+//     });
+
+//     if (!pdfResponse.data.result || !pdfResponse.data.result.base64_data) {
+//       return res.status(404).json({ error: "PDF not found or invalid response from ServiceNow" });
+//     }
+
+//     const base64Pdf = pdfResponse.data.result.base64_data;
+//     const pdfBuffer = Buffer.from(base64Pdf, "base64");
+
+//     // Fetch job assignment details
+//     console.log("Fetching job assignment details...");
+//     const jobDetails = await getDataFromServiceNow(ENDPOINTS.GET_SPECIFIC_ASSIGNMENT_PATH, { user_email, record_sys_id });
+
+//     if (jobDetails.error) {
+//       return res.status(jobDetails.status || 500).json({ error: jobDetails.error });
+//     }
+
+//     console.log("Job assignment details retrieved:", jobDetails);
+
+//     // Load the original PDF with pdf-lib
+//     const pdfDoc = await PDFDocument.load(pdfBuffer);
+    
+//     // Register fontkit with PDFDocument
+//     pdfDoc.registerFontkit(fontkit);
+    
+//     // Load and embed a Unicode font that supports Greek characters
+//     // First, try to use Arial if available (which usually supports Greek)
+//     let customFont;
+//     try {
+//       // Try to load Arial first (if available on the system)
+//       const arialPath = path.join(__dirname, 'fonts', 'arial.ttf');
+//       if (fs.existsSync(arialPath)) {
+//         const fontBytes = fs.readFileSync(arialPath);
+//         customFont = await pdfDoc.embedFont(fontBytes, { subset: true });
+//       } else {
+//         // Fallback to Noto Sans
+//         const notoPath = path.join(__dirname, 'fonts', 'NotoSans-Regular.ttf');
+//         if (fs.existsSync(notoPath)) {
+//           const fontBytes = fs.readFileSync(notoPath);
+//           customFont = await pdfDoc.embedFont(fontBytes, { subset: true });
+//         } else {
+//           throw new Error('No suitable font found. Please install Arial or Noto Sans.');
+//         }
+//       }
+//     } catch (fontError) {
+//       console.error('Error loading custom font:', fontError);
+//       // If custom font fails, try to use a built-in font as last resort
+//       customFont = await pdfDoc.embedFont(PDFDocument.StandardFonts.TimesRoman);
+//     }
+    
+//     const form = pdfDoc.getForm();
+//     const fields = form.getFields();
+
+//     // Keep track of any fields that couldn't be filled
+//     const failedFields = [];
+
+//     for (const field of fields) {
+//       const fieldName = field.getName();
+//       const matchingValue = findMatchingValue(fieldName, jobDetails);
+    
+//       if (matchingValue) {
+//         try {
+//           if (field.constructor.name === 'PDFTextField') {
+//             console.log(`Attempting to fill field: ${fieldName} with value: ${matchingValue}`);
+//             field.setText(matchingValue);
+    
+//             // Increase font size for the field (adjust the multiplier as needed)
+//             const fontSize = 10.5;  // Set this to the font size you prefer
+//             field.setFontSize(fontSize);  // Apply the larger font size
+//             field.updateAppearances(customFont);
+    
+//           } else if (field.constructor.name === 'PDFCheckBox') {
+//             if (matchingValue === 'checked') field.check();
+//           } else if (field.constructor.name === 'PDFRadioButton') {
+//             field.select(matchingValue);
+//           } else if (field.constructor.name === 'PDFDropdown') {
+//             field.select(matchingValue);
+//           }
+//         } catch (err) {
+//           console.warn(`Failed to fill field ${fieldName}:`, err.message);
+//           failedFields.push({ fieldName, error: err.message });
+//         }
+//       }
+//     }
+    
+
+//     const workCode = jobDetails.result.job_assignments[0].u_work_code?.value || 
+//                     jobDetails.result.job_assignments[0].u_work_code?.displayValue ||
+//                     `default_${Date.now()}`; // Fallback if work code is not found
+
+//     // Sanitize the work code for use in filename
+//     const sanitizedWorkCode = sanitizeFileName(workCode);
+//     // Save the filled PDF to a new file
+//     const modifiedPdfBytes = await pdfDoc.save();
+//     const fileName = `${sanitizedWorkCode}.pdf`;
+//     const filePath = path.join(__dirname, fileName);
+
+//     fs.writeFileSync(filePath, modifiedPdfBytes);
+//     console.log("Filled PDF saved at:", filePath);
+
+//     // Return response with information about any failed fields
+//     const response = {
+//       message: "PDF filled and saved successfully",
+//       filePath,
+//     };
+
+//     if (failedFields.length > 0) {
+//       response.warnings = {
+//         message: "Some fields could not be filled properly",
+//         failedFields
+//       };
+//     }
+
+//     res.json(response);
+
+//   } catch (error) {
+//     console.error("Error processing PDF:", error.message);
+//     res.status(500).json({ error: "Failed to process PDF" });
+//   }
+// });
+
+// Generate pdf and Attach it in the right record in ServiceNow
 app.get("/api/generate_pdf", async (req, res) => {
   try {
     const { user_email, record_sys_id } = req.query;
@@ -261,12 +396,19 @@ app.get("/api/generate_pdf", async (req, res) => {
       headers: { "Content-Type": "application/json" },
     });
 
+    // Log the response from ServiceNow to check the data structure
+    console.log("PDF Response from ServiceNow:", pdfResponse.data);
+
     if (!pdfResponse.data.result || !pdfResponse.data.result.base64_data) {
       return res.status(404).json({ error: "PDF not found or invalid response from ServiceNow" });
     }
 
     const base64Pdf = pdfResponse.data.result.base64_data;
+    console.log("Base64 PDF fetched from ServiceNow:", base64Pdf);  // Log the base64 data received from ServiceNow
+
     const pdfBuffer = Buffer.from(base64Pdf, "base64");
+    console.log("PDF Buffer created from base64 data");
+    console.log("PDF Buffer length:", pdfBuffer.length);  // Log the length of the buffer to check if it's valid
 
     // Fetch job assignment details
     console.log("Fetching job assignment details...");
@@ -280,56 +422,47 @@ app.get("/api/generate_pdf", async (req, res) => {
 
     // Load the original PDF with pdf-lib
     const pdfDoc = await PDFDocument.load(pdfBuffer);
-    
+    console.log("PDF loaded successfully");
+
     // Register fontkit with PDFDocument
     pdfDoc.registerFontkit(fontkit);
-    
+
     // Load and embed a Unicode font that supports Greek characters
-    // First, try to use Arial if available (which usually supports Greek)
     let customFont;
     try {
-      // Try to load Arial first (if available on the system)
       const arialPath = path.join(__dirname, 'fonts', 'arial.ttf');
       if (fs.existsSync(arialPath)) {
         const fontBytes = fs.readFileSync(arialPath);
         customFont = await pdfDoc.embedFont(fontBytes, { subset: true });
       } else {
-        // Fallback to Noto Sans
         const notoPath = path.join(__dirname, 'fonts', 'NotoSans-Regular.ttf');
         if (fs.existsSync(notoPath)) {
           const fontBytes = fs.readFileSync(notoPath);
           customFont = await pdfDoc.embedFont(fontBytes, { subset: true });
         } else {
-          throw new Error('No suitable font found. Please install Arial or Noto Sans.');
+          throw new Error('No suitable font found.');
         }
       }
     } catch (fontError) {
       console.error('Error loading custom font:', fontError);
-      // If custom font fails, try to use a built-in font as last resort
       customFont = await pdfDoc.embedFont(PDFDocument.StandardFonts.TimesRoman);
     }
-    
+
     const form = pdfDoc.getForm();
     const fields = form.getFields();
 
-    // Keep track of any fields that couldn't be filled
-    const failedFields = [];
-
+    // Fill in fields with values
     for (const field of fields) {
       const fieldName = field.getName();
       const matchingValue = findMatchingValue(fieldName, jobDetails);
     
       if (matchingValue) {
         try {
+          console.log(`Setting field ${fieldName} to ${matchingValue}`);  // Log the field name and value
           if (field.constructor.name === 'PDFTextField') {
-            console.log(`Attempting to fill field: ${fieldName} with value: ${matchingValue}`);
             field.setText(matchingValue);
-    
-            // Increase font size for the field (adjust the multiplier as needed)
-            const fontSize = 10.5;  // Set this to the font size you prefer
-            field.setFontSize(fontSize);  // Apply the larger font size
+            field.setFontSize(10.5);
             field.updateAppearances(customFont);
-    
           } else if (field.constructor.name === 'PDFCheckBox') {
             if (matchingValue === 'checked') field.check();
           } else if (field.constructor.name === 'PDFRadioButton') {
@@ -339,47 +472,44 @@ app.get("/api/generate_pdf", async (req, res) => {
           }
         } catch (err) {
           console.warn(`Failed to fill field ${fieldName}:`, err.message);
-          failedFields.push({ fieldName, error: err.message });
         }
       }
     }
-    
 
-    const workCode = jobDetails.result.job_assignments[0].u_work_code?.value || 
-                    jobDetails.result.job_assignments[0].u_work_code?.displayValue ||
-                    `default_${Date.now()}`; // Fallback if work code is not found
-
-    // Sanitize the work code for use in filename
-    const sanitizedWorkCode = sanitizeFileName(workCode);
-    // Save the filled PDF to a new file
+    // Convert the modified PDF to base64
     const modifiedPdfBytes = await pdfDoc.save();
-    const fileName = `${sanitizedWorkCode}.pdf`;
-    const filePath = path.join(__dirname, fileName);
+    console.log("Modified PDF generated");
 
-    fs.writeFileSync(filePath, modifiedPdfBytes);
-    console.log("Filled PDF saved at:", filePath);
+    const base64PdfString = modifiedPdfBytes.toString('base64');
+    console.log("Base64 PDF data being sent:", base64PdfString);
 
-    // Return response with information about any failed fields
-    const response = {
-      message: "PDF filled and saved successfully",
-      filePath,
-    };
+    // Send base64 PDF to ServiceNow endpoint with query params (user_email, record_sys_id)
+    const attachPdfResponse = await axios.post(
+      `${servicenowBaseURL}${ENDPOINTS.ATTACH_PDF}`, // Use the endpoint from ENDPOINTS.ATTACH_PDF
+      {
+        file_data: base64PdfString,
+      },
+      {
+        params: { user_email, record_sys_id }, // Include the query params
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
-    if (failedFields.length > 0) {
-      response.warnings = {
-        message: "Some fields could not be filled properly",
-        failedFields
-      };
-    }
+    console.log("PDF attached successfully:", attachPdfResponse.data);
 
-    res.json(response);
+    // Return success response
+    res.json({
+      message: "PDF filled and attached successfully",
+      attachPdfResponse: attachPdfResponse.data,
+    });
 
   } catch (error) {
     console.error("Error processing PDF:", error.message);
     res.status(500).json({ error: "Failed to process PDF" });
   }
 });
-
 
 
 app.listen(port, () => {

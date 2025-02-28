@@ -380,10 +380,156 @@ function sanitizeFileName(fileName) {
 //   }
 // });
 
-// Generate pdf and Attach it in the right record in ServiceNow
+///////////////////
+////////////////
+//////////////////
+//////////////////
+///////////////
+//////////////
+// // Generate pdf and Attach it in the right record in ServiceNow
+// app.get("/api/generate_pdf", async (req, res) => {
+//   try {
+//     const { user_email, record_sys_id } = req.query;
+//     if (!user_email || !record_sys_id) {
+//       return res.status(400).json({ error: "Missing required parameters: user_email, record_sys_id" });
+//     }
+
+//     console.log("Fetching PDF from ServiceNow...");
+
+//     // Fetch base64 PDF from ServiceNow
+//     const pdfResponse = await axios.get(`${servicenowBaseURL}${ENDPOINTS.GET_PDF_BASE64}`, {
+//       auth,
+//       headers: { "Content-Type": "application/json" },
+//     });
+
+//     // Log the response from ServiceNow to check the data structure
+//     console.log("PDF Response from ServiceNow:", pdfResponse.data);
+
+//     if (!pdfResponse.data.result || !pdfResponse.data.result.base64_data) {
+//       return res.status(404).json({ error: "PDF not found or invalid response from ServiceNow" });
+//     }
+
+//     const base64Pdf = pdfResponse.data.result.base64_data;
+//     console.log("Base64 PDF fetched from ServiceNow:", base64Pdf);  // Log the base64 data received from ServiceNow
+
+    
+//     const pdfBuffer = Buffer.from(base64Pdf, "base64");
+//     console.log("PDF Buffer created from base64 data");
+//     console.log("PDF Buffer length:", pdfBuffer.length);  // Log the length of the buffer to check if it's valid
+
+//     // Fetch job assignment details
+//     console.log("Fetching job assignment details...");
+//     const jobDetails = await getDataFromServiceNow(ENDPOINTS.GET_SPECIFIC_ASSIGNMENT_PATH, { user_email, record_sys_id });
+
+//     if (jobDetails.error) {
+//       return res.status(jobDetails.status || 500).json({ error: jobDetails.error });
+//     }
+
+//     console.log("Job assignment details retrieved:", jobDetails);
+
+//     // Load the original PDF with pdf-lib
+//     const pdfDoc = await PDFDocument.load(pdfBuffer);
+//     console.log("PDF loaded successfully");
+
+//     // Register fontkit with PDFDocument
+//     pdfDoc.registerFontkit(fontkit);
+
+//     // Load and embed a Unicode font that supports Greek characters
+//     let customFont;
+//     try {
+//       const arialPath = path.join(__dirname, 'fonts', 'arial.ttf');
+//       if (fs.existsSync(arialPath)) {
+//         const fontBytes = fs.readFileSync(arialPath);
+//         customFont = await pdfDoc.embedFont(fontBytes, { subset: true });
+//       } else {
+//         const notoPath = path.join(__dirname, 'fonts', 'NotoSans-Regular.ttf');
+//         if (fs.existsSync(notoPath)) {
+//           const fontBytes = fs.readFileSync(notoPath);
+//           customFont = await pdfDoc.embedFont(fontBytes, { subset: true });
+//         } else {
+//           throw new Error('No suitable font found.');
+//         }
+//       }
+//     } catch (fontError) {
+//       console.error('Error loading custom font:', fontError);
+//       customFont = await pdfDoc.embedFont(PDFDocument.StandardFonts.TimesRoman);
+//     }
+
+//     const form = pdfDoc.getForm();
+//     const fields = form.getFields();
+
+//     // Fill in fields with values
+//     for (const field of fields) {
+//       const fieldName = field.getName();
+//       const matchingValue = findMatchingValue(fieldName, jobDetails);
+    
+//       if (matchingValue) {
+//         try {
+//           console.log(`Setting field ${fieldName} to ${matchingValue}`);  // Log the field name and value
+//           if (field.constructor.name === 'PDFTextField') {
+//             field.setText(matchingValue);
+//             field.setFontSize(10.5);
+//             field.updateAppearances(customFont);
+//           } else if (field.constructor.name === 'PDFCheckBox') {
+//             if (matchingValue === 'checked') field.check();
+//           } else if (field.constructor.name === 'PDFRadioButton') {
+//             field.select(matchingValue);
+//           } else if (field.constructor.name === 'PDFDropdown') {
+//             field.select(matchingValue);
+//           }
+//         } catch (err) {
+//           console.warn(`Failed to fill field ${fieldName}:`, err.message);
+//         }
+//       }
+//     }
+
+//     // Convert the modified PDF to base64 - FIXED PART
+//     const modifiedPdfBytes = await pdfDoc.save();
+//     console.log("Modified PDF generated");
+
+//     // Convert Uint8Array to Buffer before encoding to base64
+//     const modifiedPdfBuffer = Buffer.from(modifiedPdfBytes);
+//     const base64PdfString = modifiedPdfBuffer.toString('base64');
+//     console.log("Base64 PDF data being sent:", base64PdfString);
+
+//     // Send base64 PDF to ServiceNow endpoint with query params (user_email, record_sys_id)
+//     const attachPdfResponse = await axios.post(
+//       `${servicenowBaseURL}${ENDPOINTS.ATTACH_PDF}`, // Use the endpoint from ENDPOINTS.ATTACH_PDF
+//       {
+//         file_data: base64PdfString,
+//       },
+//       {
+//         params: { user_email, record_sys_id }, // Include the query params
+//         headers: {
+//           "Content-Type": "application/json",
+//         },
+//       }
+//     );
+
+//     console.log("PDF attached successfully:", attachPdfResponse.data);
+
+//     // Return success response
+//     res.json({
+//       message: "PDF filled and attached successfully",
+//       attachPdfResponse: attachPdfResponse.data,
+//     });
+
+//   } catch (error) {
+//     console.error("Error processing PDF:", error.message);
+//     res.status(500).json({ error: "Failed to process PDF" });
+//   }
+// });
+
+// Generate PDF and Attach it in the right record in ServiceNow
 app.get("/api/generate_pdf", async (req, res) => {
   try {
-    const { user_email, record_sys_id } = req.query;
+    const { user_email, record_sys_id } = req.query; // Keep query params
+    const signatureTechnician = req.body.signature_technician; // Get from form-data
+    const signatureCustomer = req.body.signature_customer; // Get from form-data
+    console.log("Request Body:", req.body);
+    console.log("Technician Signature Base64:", signatureTechnician ? signatureTechnician.substring(0, 30) + "..." : "Not provided");
+    console.log("Customer Signature Base64:", signatureCustomer ? signatureCustomer.substring(0, 30) + "..." : "Not provided");
+
     if (!user_email || !record_sys_id) {
       return res.status(400).json({ error: "Missing required parameters: user_email, record_sys_id" });
     }
@@ -396,21 +542,13 @@ app.get("/api/generate_pdf", async (req, res) => {
       headers: { "Content-Type": "application/json" },
     });
 
-    // Log the response from ServiceNow to check the data structure
-    console.log("PDF Response from ServiceNow:", pdfResponse.data);
-
     if (!pdfResponse.data.result || !pdfResponse.data.result.base64_data) {
       return res.status(404).json({ error: "PDF not found or invalid response from ServiceNow" });
     }
 
     const base64Pdf = pdfResponse.data.result.base64_data;
-    console.log("Base64 PDF fetched from ServiceNow:", base64Pdf);  // Log the base64 data received from ServiceNow
-
     const pdfBuffer = Buffer.from(base64Pdf, "base64");
-    console.log("PDF Buffer created from base64 data");
-    console.log("PDF Buffer length:", pdfBuffer.length);  // Log the length of the buffer to check if it's valid
 
-    // Fetch job assignment details
     console.log("Fetching job assignment details...");
     const jobDetails = await getDataFromServiceNow(ENDPOINTS.GET_SPECIFIC_ASSIGNMENT_PATH, { user_email, record_sys_id });
 
@@ -430,12 +568,12 @@ app.get("/api/generate_pdf", async (req, res) => {
     // Load and embed a Unicode font that supports Greek characters
     let customFont;
     try {
-      const arialPath = path.join(__dirname, 'fonts', 'arial.ttf');
+      const arialPath = path.join(__dirname, 'fonts', 'Helvetica.ttf');  // Keep original logic
       if (fs.existsSync(arialPath)) {
         const fontBytes = fs.readFileSync(arialPath);
         customFont = await pdfDoc.embedFont(fontBytes, { subset: true });
       } else {
-        const notoPath = path.join(__dirname, 'fonts', 'NotoSans-Regular.ttf');
+        const notoPath = path.join(__dirname, 'fonts', 'Helvetica.ttf');
         if (fs.existsSync(notoPath)) {
           const fontBytes = fs.readFileSync(notoPath);
           customFont = await pdfDoc.embedFont(fontBytes, { subset: true });
@@ -458,7 +596,7 @@ app.get("/api/generate_pdf", async (req, res) => {
     
       if (matchingValue) {
         try {
-          console.log(`Setting field ${fieldName} to ${matchingValue}`);  // Log the field name and value
+          console.log(`Setting field ${fieldName} to ${matchingValue}`);
           if (field.constructor.name === 'PDFTextField') {
             field.setText(matchingValue);
             field.setFontSize(10.5);
@@ -476,33 +614,68 @@ app.get("/api/generate_pdf", async (req, res) => {
       }
     }
 
-    // Convert the modified PDF to base64
+    // Get the first page to place the signatures
+    const pages = pdfDoc.getPages();
+    const firstPage = pages[0];
+
+    // Add technician signature if provided
+    if (signatureTechnician) {
+      console.log("Embedding technician signature...");
+      const technicianSignatureBytes = Buffer.from(signatureTechnician, "base64");
+      const technicianSignatureImage = await pdfDoc.embedPng(technicianSignatureBytes);
+      firstPage.drawImage(technicianSignatureImage, {
+        x: 150,
+        y: 586,
+        width: 100,
+        height: 50
+      });
+    }
+
+    // Add customer signature if provided
+    if (signatureCustomer) {
+      console.log("Embedding customer signature...");
+      const customerSignatureBytes = Buffer.from(signatureCustomer, "base64");
+      const customerSignatureImage = await pdfDoc.embedPng(customerSignatureBytes);
+      firstPage.drawImage(customerSignatureImage, {
+        x: 529,
+        y: 586,
+        width: 100,
+        height: 50
+      });
+    }
+
+    // Save the modified PDF as binary
     const modifiedPdfBytes = await pdfDoc.save();
-    console.log("Modified PDF generated");
+    const modifiedPdfBuffer = Buffer.from(modifiedPdfBytes);
 
-    const base64PdfString = modifiedPdfBytes.toString('base64');
-    console.log("Base64 PDF data being sent:", base64PdfString);
-
-    // Send base64 PDF to ServiceNow endpoint with query params (user_email, record_sys_id)
-    const attachPdfResponse = await axios.post(
-      `${servicenowBaseURL}${ENDPOINTS.ATTACH_PDF}`, // Use the endpoint from ENDPOINTS.ATTACH_PDF
+    // Use ServiceNow Attachment API to upload the file
+    const attachmentResponse = await axios.post(
+      `${servicenowBaseURL}/api/now/attachment/file`, 
+      modifiedPdfBuffer,
       {
-        file_data: base64PdfString,
-      },
-      {
-        params: { user_email, record_sys_id }, // Include the query params
-        headers: {
-          "Content-Type": "application/json",
+        params: {
+          table_name: 'x_eedat_meters_app_job_assignments',
+          table_sys_id: record_sys_id,
+          file_name: 'generated_document.pdf'
         },
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Accept': 'application/json'
+        },
+        auth: {
+          username: process.env.SERVICENOW_USER,
+          password: process.env.SERVICENOW_PASS
+        },
+        timeout: 30000
       }
     );
 
-    console.log("PDF attached successfully:", attachPdfResponse.data);
+    console.log("PDF attached successfully:", attachmentResponse.data);
 
     // Return success response
     res.json({
       message: "PDF filled and attached successfully",
-      attachPdfResponse: attachPdfResponse.data,
+      attachment: attachmentResponse.data
     });
 
   } catch (error) {
@@ -510,6 +683,7 @@ app.get("/api/generate_pdf", async (req, res) => {
     res.status(500).json({ error: "Failed to process PDF" });
   }
 });
+
 
 
 app.listen(port, () => {

@@ -519,7 +519,7 @@ app.get("/api/generate_pdf", async (req, res) => {
 });
 
 //assign the pdf
-app.get("/api/sign_pdf", async (req, res) => {
+app.post("/api/sign_pdf", async (req, res) => {
   try {
     const signatureTechnician = req.body.signature_technician; // Get from form-data
     const signatureCustomer = req.body.signature_customer; // Get from form-data

@@ -486,6 +486,23 @@ app.get("/api/generate_pdf", async (req, res) => {
         .json({ error: "Failed to fetch attached PDF data." });
     }
 
+
+    const updateJobDispositionResponse = await axios.put(
+      `${servicenowBaseURL}${ENDPOINTS.UPDATE_JOB_DISPOSITION_PATH}`,
+      {
+        u_state: "Form Complete",  // Set the status to "Form Complete"
+        // Add any other required fields to the request body here
+      },
+      {
+        auth,
+        headers: { "Content-Type": "application/json" },
+        params: { user_email, record_sys_id },
+      }
+    );
+
+    console.log("Job disposition updated:", updateJobDispositionResponse.data);
+
+
     // Return the base64 data of the attached PDF as response in your custom format
     res.status(200).json({
       file_name: getAttachedPdfResponse.data.result.file_name,
@@ -677,6 +694,21 @@ app.get("/api/sign_pdf", async (req, res) => {
             .status(404)
             .json({ error: "Failed to fetch attached PDF data." });
         }
+
+        const updateJobDispositionResponse = await axios.put(
+          `${servicenowBaseURL}${ENDPOINTS.UPDATE_JOB_DISPOSITION_PATH}`,
+          {
+            u_state: "Form Signed",  // Set the status to "Form Signed"
+            // Add any other required fields to the request body here
+          },
+          {
+            auth,
+            headers: { "Content-Type": "application/json" },
+            params: { user_email, record_sys_id },
+          }
+        );
+    
+        console.log("Job disposition updated:", updateJobDispositionResponse.data);
 
         // Return the base64 data of the attached PDF as response in your custom format
         res.status(200).json({

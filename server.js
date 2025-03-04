@@ -490,7 +490,7 @@ app.get("/api/generate_pdf", async (req, res) => {
     const updateJobDispositionResponse = await axios.put(
       `${servicenowBaseURL}${ENDPOINTS.UPDATE_JOB_DISPOSITION_PATH}`,
       {
-        u_state: "Form Complete",  // Set the status to "Form Complete"
+        u_state: "PDF Complete",  // Set the status to "Form Complete"
         // Add any other required fields to the request body here
       },
       {

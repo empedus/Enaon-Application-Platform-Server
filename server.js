@@ -3,7 +3,7 @@ const express = require("express");
 const axios = require("axios");
 const path = require("path");
 const fs = require("fs");
-const { v4: uuidv4 } = require("uuid");  // Import UUID library for generating unique session IDs
+const { v4: uuidv4 } = require("uuid"); // Import UUID library for generating unique session IDs
 const { PDFDocument } = require("pdf-lib");
 const fontkit = require("@pdf-lib/fontkit");
 
@@ -14,8 +14,8 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // app.use(express.json());
-app.use(express.json({ limit: '10mb' })); // For JSON payloads
-app.use(express.urlencoded({ limit: '10mb', extended: true })); // For URL-encoded data
+app.use(express.json({ limit: "10mb" })); // For JSON payloads
+app.use(express.urlencoded({ limit: "10mb", extended: true })); // For URL-encoded data
 
 const servicenowBaseURL = "https://enaondev.service-now.com";
 const auth = {
@@ -325,8 +325,6 @@ function sanitizeFileName(fileName) {
     .trim();
 }
 
-
-
 app.get("/api/generate_pdf", async (req, res) => {
   try {
     const { user_email, record_sys_id } = req.query; // Keep query params
@@ -345,8 +343,8 @@ app.get("/api/generate_pdf", async (req, res) => {
       `${servicenowBaseURL}${ENDPOINTS.GET_PDF_TEMPLATE}`,
       {
         params: {
-          user_email,       // Add user_email as a query parameter
-          record_sys_id     // Add record_sys_id as a query parameter
+          user_email, // Add user_email as a query parameter
+          record_sys_id, // Add record_sys_id as a query parameter
         },
         auth,
         headers: { "Content-Type": "application/json" },
@@ -472,15 +470,20 @@ app.get("/api/generate_pdf", async (req, res) => {
         headers: { "Content-Type": "application/json" },
         params: {
           user_email: user_email,
-          record_sys_id: record_sys_id
+          record_sys_id: record_sys_id,
         },
       }
     );
 
     console.log("Get attached PDF response:", getAttachedPdfResponse.data);
 
-    if (!getAttachedPdfResponse.data.result || !getAttachedPdfResponse.data.result.base64_data) {
-      return res.status(404).json({ error: "Failed to fetch attached PDF data." });
+    if (
+      !getAttachedPdfResponse.data.result ||
+      !getAttachedPdfResponse.data.result.base64_data
+    ) {
+      return res
+        .status(404)
+        .json({ error: "Failed to fetch attached PDF data." });
     }
 
     // Return the base64 data of the attached PDF as response in your custom format
@@ -490,12 +493,13 @@ app.get("/api/generate_pdf", async (req, res) => {
       base64_data: getAttachedPdfResponse.data.result.base64_data,
     });
   } catch (error) {
-    console.error("Error processing PDF:", error.response ? error.response.data : error.message);
+    console.error(
+      "Error processing PDF:",
+      error.response ? error.response.data : error.message
+    );
     res.status(500).json({ error: "Failed to process PDF" });
   }
 });
-
-
 
 //assign the pdf
 app.get("/api/sign_pdf", async (req, res) => {
@@ -506,93 +510,189 @@ app.get("/api/sign_pdf", async (req, res) => {
     console.log("Request Body:", req.body);
     console.log("Fetching PDF from ServiceNow...");
 
-
     if (!user_email || !record_sys_id) {
       return res.status(400).json({
         error: "Missing required parameters: user_email, record_sys_id",
       });
     }
 
+    console.log("Fetching attached PDF...");
+    const getAttachedPdfResponse = await axios.get(
+      `${servicenowBaseURL}${ENDPOINTS.GET_ATTACHED_PDF}`,
+      {
+        auth,
+        headers: { "Content-Type": "application/json" },
+        params: {
+          user_email: user_email,
+          record_sys_id: record_sys_id,
+        },
+      }
+    );
 
-    // if(signatureCustomer && signatureTechnician){
-//   try {
-//     // Generate unique session IDs for each signature
-//     const sessionIdTechnician = uuidv4(); // Technician signature session ID
-//     const sessionIdCustomer = uuidv4(); // Customer signature session ID
+    console.log("Get attached PDF response:", getAttachedPdfResponse.data);
+    const base64Pdf = getAttachedPdfResponse.data.result.base64_data;
+    const pdfBuffer = Buffer.from(base64Pdf, "base64");
+    const pdfDoc = await PDFDocument.load(pdfBuffer);
 
-//     // Define the image folder path (TempImageFolder should already exist)
-//     const folderPath = path.join(__dirname, "TempImageFolder");
-//     if (!fs.existsSync(folderPath)) {
-//       fs.mkdirSync(folderPath, { recursive: true });
-//     }
+    console.log("PDF loaded successfully");
 
-//     // Process Technician Signature
-//     if (signatureTechnician) {
-//       const technicianImagePath = path.join(folderPath, `techniciansignature_${sessionIdTechnician}.png`);
-//       const base64DataTechnician = signatureTechnician.replace(/^data:image\/png;base64,/, "");
-//       const imageBufferTechnician = Buffer.from(base64DataTechnician, "base64");
-//       fs.writeFileSync(technicianImagePath, imageBufferTechnician);
-//       console.log(`Technician signature image saved for session ${sessionIdTechnician}.`);
+    if (signatureCustomer && signatureTechnician) {
+      try {
+        // Generate unique session IDs for each signature
+        const sessionIdTechnician = uuidv4(); // Technician signature session ID
+        const sessionIdCustomer = uuidv4(); // Customer signature session ID
 
-//       // Embed Technician Signature in PDF
-//       const pngImageTechnician = await pdfDoc.embedPng(imageBufferTechnician);
-//       console.log("Technician PNG image embedded successfully.");
-//       const pngDimsTechnician = pngImageTechnician.scale(0.1); // Scale down technician signature image to 10%
-//       const page = pdfDoc.getPages()[0] || pdfDoc.addPage();
-//       page.drawImage(pngImageTechnician, {
-//         x: 115, // Technician signature position X
-//         y: 215, // Technician signature position Y
-//         width: pngDimsTechnician.width,
-//         height: pngDimsTechnician.height,
-//       });
+        // Define the image folder path (TempImageFolder should already exist)
+        const folderPath = path.join(__dirname, "TempImageFolder");
+        if (!fs.existsSync(folderPath)) {
+          fs.mkdirSync(folderPath, { recursive: true });
+        }
 
-//       // Delete the technician signature image file
-//       fs.unlinkSync(technicianImagePath);
-//       console.log(`Technician signature image deleted for session ${sessionIdTechnician}.`);
-//     }
+        // Process Technician Signature
+        if (signatureTechnician) {
+          const technicianImagePath = path.join(
+            folderPath,
+            `techniciansignature_${sessionIdTechnician}.png`
+          );
+          const base64DataTechnician = signatureTechnician.replace(
+            /^data:image\/png;base64,/,
+            ""
+          );
+          const imageBufferTechnician = Buffer.from(
+            base64DataTechnician,
+            "base64"
+          );
+          fs.writeFileSync(technicianImagePath, imageBufferTechnician);
+          console.log(
+            `Technician signature image saved for session ${sessionIdTechnician}.`
+          );
 
-//     // Process Customer Signature
-//     if (signatureCustomer) {
-//       const customerImagePath = path.join(folderPath, `customersignature_${sessionIdCustomer}.png`);
-//       const base64DataCustomer = signatureCustomer.replace(/^data:image\/png;base64,/, "");
-//       const imageBufferCustomer = Buffer.from(base64DataCustomer, "base64");
-//       fs.writeFileSync(customerImagePath, imageBufferCustomer);
-//       console.log(`Customer signature image saved for session ${sessionIdCustomer}.`);
+          // Embed Technician Signature in PDF
+          const pngImageTechnician = await pdfDoc.embedPng(
+            imageBufferTechnician
+          );
+          console.log("Technician PNG image embedded successfully.");
+          const pngDimsTechnician = pngImageTechnician.scale(0.1); // Scale down technician signature image to 10%
+          const page = pdfDoc.getPages()[0] || pdfDoc.addPage();
+          page.drawImage(pngImageTechnician, {
+            x: 115, // Technician signature position X
+            y: 215, // Technician signature position Y
+            width: pngDimsTechnician.width,
+            height: pngDimsTechnician.height,
+          });
 
-//       // Embed Customer Signature in PDF
-//       const pngImageCustomer = await pdfDoc.embedPng(imageBufferCustomer);
-//       console.log("Customer PNG image embedded successfully.");
-//       const pngDimsCustomer = pngImageCustomer.scale(0.1); // Scale down customer signature image to 10%
-//       const page = pdfDoc.getPages()[0] || pdfDoc.addPage();
-//       page.drawImage(pngImageCustomer, {
-//         x: 500, // Customer signature position X
-//         y: 215, // Customer signature position Y
-//         width: pngDimsCustomer.width,
-//         height: pngDimsCustomer.height,
-//       });
+          // Delete the technician signature image file
+          fs.unlinkSync(technicianImagePath);
+          console.log(
+            `Technician signature image deleted for session ${sessionIdTechnician}.`
+          );
+        }
 
-//       // Delete the customer signature image file
-//       fs.unlinkSync(customerImagePath);
-//       console.log(`Customer signature image deleted for session ${sessionIdCustomer}.`);
-//     }
+        // Process Customer Signature
+        if (signatureCustomer) {
+          const customerImagePath = path.join(
+            folderPath,
+            `customersignature_${sessionIdCustomer}.png`
+          );
+          const base64DataCustomer = signatureCustomer.replace(
+            /^data:image\/png;base64,/,
+            ""
+          );
+          const imageBufferCustomer = Buffer.from(base64DataCustomer, "base64");
+          fs.writeFileSync(customerImagePath, imageBufferCustomer);
+          console.log(
+            `Customer signature image saved for session ${sessionIdCustomer}.`
+          );
 
-//     // After processing both signatures, save the PDF
-//     const pdfBytes = await pdfDoc.save();
-//     console.log("PDF successfully updated with both signatures.");
+          // Embed Customer Signature in PDF
+          const pngImageCustomer = await pdfDoc.embedPng(imageBufferCustomer);
+          console.log("Customer PNG image embedded successfully.");
+          const pngDimsCustomer = pngImageCustomer.scale(0.1); // Scale down customer signature image to 10%
+          const page = pdfDoc.getPages()[0] || pdfDoc.addPage();
+          page.drawImage(pngImageCustomer, {
+            x: 500, // Customer signature position X
+            y: 215, // Customer signature position Y
+            width: pngDimsCustomer.width,
+            height: pngDimsCustomer.height,
+          });
 
+          // Delete the customer signature image file
+          fs.unlinkSync(customerImagePath);
+          console.log(
+            `Customer signature image deleted for session ${sessionIdCustomer}.`
+          );
+        }
 
-//   } catch (error) {
-//     console.error("Error processing signatures:", error);
-//   }
-// }
+        // After processing both signatures, save the PDF
+        const pdfBytes = await pdfDoc.save();
+        console.log("PDF successfully updated with both signatures.");
 
+        // Save the modified PDF as binary
+        const modifiedPdfBytes = await pdfDoc.save();
+        const modifiedPdfBuffer = Buffer.from(modifiedPdfBytes);
 
+        // Use ServiceNow Attachment API to upload the file
+        console.log("Uploading PDF to ServiceNow...");
+        const attachmentResponse = await axios.post(
+          `${servicenowBaseURL}/api/now/attachment/file`,
+          modifiedPdfBuffer,
+          {
+            params: {
+              table_name: "x_eedat_meters_app_job_assignments",
+              table_sys_id: record_sys_id,
+              file_name: "generated_document_signed.pdf",
+            },
+            headers: {
+              "Content-Type": "application/pdf",
+              Accept: "application/json",
+            },
+            auth: {
+              username: process.env.SERVICENOW_USER,
+              password: process.env.SERVICENOW_PASS,
+            },
+            timeout: 30000,
+          }
+        );
+
+        console.log("Fetching attached PDF...");
+        const getAttachedPdfResponse = await axios.get(
+          `${servicenowBaseURL}${ENDPOINTS.GET_ATTACHED_PDF}`,
+          {
+            auth,
+            headers: { "Content-Type": "application/json" },
+            params: {
+              user_email: user_email,
+              record_sys_id: record_sys_id,
+            },
+          }
+        );
+
+        console.log("Get attached PDF response:", getAttachedPdfResponse.data);
+
+        if (
+          !getAttachedPdfResponse.data.result ||
+          !getAttachedPdfResponse.data.result.base64_data
+        ) {
+          return res
+            .status(404)
+            .json({ error: "Failed to fetch attached PDF data." });
+        }
+
+        // Return the base64 data of the attached PDF as response in your custom format
+        res.status(200).json({
+          file_name: getAttachedPdfResponse.data.result.file_name,
+          content_type: getAttachedPdfResponse.data.result.content_type,
+          base64_data: getAttachedPdfResponse.data.result.base64_data,
+        });
+      } catch (error) {
+        console.error("Error processing signatures:", error);
+      }
+    }
   } catch (error) {
     console.error("Error processing PDF:", error.message);
     res.status(500).json({ error: "Failed to process PDF" });
   }
 });
-
 
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);

@@ -9,5 +9,7 @@ router.get("/generate_pdf", authorizeMeterApp, pdfController.generatePdf)
 // 8. Generate PDF with signs and Attach it in the Record
 router.post("/sign_pdf", authorizeMeterApp, pdfController.signPdf)
 
+router.get("/get_attached_pdf", authorizeMeterApp, pdfController.getattachedpdf)
+
 module.exports = router
 

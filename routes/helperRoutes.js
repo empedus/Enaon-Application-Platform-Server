@@ -68,6 +68,13 @@ router.get("/", (req, res) => {
     },
     {
       method: "GET",
+      path: "/api/meter_app/get_attached_pdf",
+      description: "Get attached PDF ",
+      requiredParams: ["user_email", "record_sys_id"],
+      returns: "Attached PDF",
+    },
+    {
+      method: "GET",
       path: "/api/helper",
       description: "Get information about all available API endpoints",
       requiredParams: [],

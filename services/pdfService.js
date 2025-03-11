@@ -10,7 +10,7 @@ const ENDPOINTS = require("../utils/endpoints")
 async function loadPdfWithFont(pdfBuffer) {
   // Load the original PDF with pdf-lib
   const pdfDoc = await PDFDocument.load(pdfBuffer)
-  console.log("PDF loaded successfully")
+  console.log("PDF loaded successfully in PDF")
 
   // Register fontkit with PDFDocument
   pdfDoc.registerFontkit(fontkit)

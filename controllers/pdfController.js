@@ -55,19 +55,21 @@ const getattachedpdf = async (req, res) => {
   }
 };
 
+
+
 // Generate PDF and Attach it in the Record
 const generatePdf = async (req, res) => {
   try {
-    const { user_email, record_sys_id } = req.query // Keep query params
-    console.log("Request Body:", req.body)
+    const { user_email, record_sys_id } = req.query; // Keep query params
+    console.log("Request Body:", req.body);
 
     if (!user_email || !record_sys_id) {
       return res.status(400).json({
         error: "Missing required parameters: user_email, record_sys_id",
-      })
+      });
     }
 
-    console.log("Fetching PDF from ServiceNow...")
+    console.log("Fetching PDF from ServiceNow...");
 
     // Fetch base64 PDF from ServiceNow
     const pdfResponse = await axios.get(`${ENDPOINTS.servicenowBaseURL}${ENDPOINTS.GET_PDF_TEMPLATE}`, {
@@ -80,44 +82,53 @@ const generatePdf = async (req, res) => {
         password: process.env.SERVICENOW_PASS,
       },
       headers: { "Content-Type": "application/json" },
-    })
+    });
 
-    console.log("PDF Response:", pdfResponse.data)
+    console.log("PDF Response:", pdfResponse.data);
 
     if (!pdfResponse.data.result || !pdfResponse.data.result.base64_data) {
-      return res.status(404).json({ error: "PDF not found or invalid response from ServiceNow" })
+      return res.status(404).json({ error: "PDF not found or invalid response from ServiceNow" });
     }
 
-    const base64Pdf = pdfResponse.data.result.base64_data
-    const pdfBuffer = Buffer.from(base64Pdf, "base64")
+    const base64Pdf = pdfResponse.data.result.base64_data;
+    const pdfBuffer = Buffer.from(base64Pdf, "base64");
 
-    console.log("Fetching job assignment details...")
-    const jobDetails = await getDataFromServiceNow(ENDPOINTS.GET_SPECIFIC_ASSIGNMENT_PATH, {
-      user_email,
-      record_sys_id,
-    })
+    console.log("Fetching job assignment details...");
+    
+    // Fetch the job assignment details by passing user_email and record_sys_id
+    const serviceNowResponse = await getDataFromServiceNow(ENDPOINTS.GET_SPECIFIC_ASSIGNMENT_PATH, {
+          user_email,
+          record_sys_id,
+        })
 
-    if (jobDetails.error) {
-      return res.status(jobDetails.status || 500).json({ error: jobDetails.error })
+    if (serviceNowResponse.error) {
+      return res.status(serviceNowResponse.status || 500).json({ error: serviceNowResponse.error });
     }
 
-    console.log("Job assignment details retrieved:", jobDetails)
+    const jobDetails = serviceNowResponse.result; 
 
+    
+    // Extract the first job assignment's u_arxiki_endeiksi.value
+    const hkasp = jobDetails?.job_assignments?.[0]?.u_hkasp?.value;
+
+    // Get the custom value for the PDF file name from job details
+    const pdfFileName = hkasp || "generated_document"; // Use a fallback name
+    console.log(hkasp)
     // Load the PDF and prepare it with fonts
-    const { pdfDoc, customFont } = await loadPdfWithFont(pdfBuffer)
+    const { pdfDoc, customFont } = await loadPdfWithFont(pdfBuffer);
 
     // Fill the PDF form with job details
-    const filledPdfDoc = await fillPdfForm(pdfDoc, customFont, jobDetails)
+    const filledPdfDoc = await fillPdfForm(pdfDoc, customFont, jobDetails);
 
     // Save the modified PDF as binary
-    const modifiedPdfBytes = await filledPdfDoc.save()
-    const modifiedPdfBuffer = Buffer.from(modifiedPdfBytes)
+    const modifiedPdfBytes = await filledPdfDoc.save();
+    const modifiedPdfBuffer = Buffer.from(modifiedPdfBytes);
 
-    // Attach the PDF to ServiceNow
-    await attachPdfToServiceNow(modifiedPdfBuffer, record_sys_id, "generated_document.pdf")
+    // Attach the PDF to ServiceNow with the custom file name
+    await attachPdfToServiceNow(modifiedPdfBuffer, record_sys_id, `${pdfFileName}.pdf`);
 
     // Now, call GET_ATTACHED_PDF to fetch the base64 content of the uploaded PDF
-    console.log("Fetching attached PDF...")
+    console.log("Fetching attached PDF...");
     const getAttachedPdfResponse = await axios.get(`${ENDPOINTS.servicenowBaseURL}${ENDPOINTS.GET_ATTACHED_PDF}`, {
       auth: {
         username: process.env.SERVICENOW_USER,
@@ -128,12 +139,12 @@ const generatePdf = async (req, res) => {
         user_email: user_email,
         record_sys_id: record_sys_id,
       },
-    })
+    });
 
-    console.log("Get attached PDF response:", getAttachedPdfResponse.data)
+    console.log("Get attached PDF response:", getAttachedPdfResponse.data);
 
     if (!getAttachedPdfResponse.data.result || !getAttachedPdfResponse.data.result.base64_data) {
-      return res.status(404).json({ error: "Failed to fetch attached PDF data." })
+      return res.status(404).json({ error: "Failed to fetch attached PDF data." });
     }
 
     const updateJobDispositionResponse = await axios.put(
@@ -149,22 +160,142 @@ const generatePdf = async (req, res) => {
         },
         headers: { "Content-Type": "application/json" },
         params: { user_email, record_sys_id },
-      },
-    )
+      }
+    );
 
-    console.log("Job disposition updated:", updateJobDispositionResponse.data)
+    console.log("Job disposition updated:", updateJobDispositionResponse.data);
 
     // Return the base64 data of the attached PDF as response in your custom format
     res.status(200).json({
       file_name: getAttachedPdfResponse.data.result.file_name,
       content_type: getAttachedPdfResponse.data.result.content_type,
       base64_data: getAttachedPdfResponse.data.result.base64_data,
-    })
+    });
   } catch (error) {
-    console.error("Error processing PDF:", error.response ? error.response.data : error.message)
-    res.status(500).json({ error: "Failed to process PDF" })
+    console.error("Error processing PDF:", error.response ? error.response.data : error.message);
+    res.status(500).json({ error: "Failed to process PDF" });
   }
-}
+};
+
+module.exports = {
+  generatePdf,
+};
+
+
+
+
+
+
+// // Generate PDF and Attach it in the Record
+// const generatePdf = async (req, res) => {
+//   try {
+//     const { user_email, record_sys_id } = req.query // Keep query params
+//     console.log("Request Body:", req.body)
+
+//     if (!user_email || !record_sys_id) {
+//       return res.status(400).json({
+//         error: "Missing required parameters: user_email, record_sys_id",
+//       })
+//     }
+
+//     console.log("Fetching PDF from ServiceNow...")
+
+//     // Fetch base64 PDF from ServiceNow
+//     const pdfResponse = await axios.get(`${ENDPOINTS.servicenowBaseURL}${ENDPOINTS.GET_PDF_TEMPLATE}`, {
+//       params: {
+//         user_email, // Add user_email as a query parameter
+//         record_sys_id, // Add record_sys_id as a query parameter
+//       },
+//       auth: {
+//         username: process.env.SERVICENOW_USER,
+//         password: process.env.SERVICENOW_PASS,
+//       },
+//       headers: { "Content-Type": "application/json" },
+//     })
+
+//     console.log("PDF Response:", pdfResponse.data)
+
+//     if (!pdfResponse.data.result || !pdfResponse.data.result.base64_data) {
+//       return res.status(404).json({ error: "PDF not found or invalid response from ServiceNow" })
+//     }
+
+//     const base64Pdf = pdfResponse.data.result.base64_data
+//     const pdfBuffer = Buffer.from(base64Pdf, "base64")
+
+//     console.log("Fetching job assignment details...")
+//     const jobDetails = await getDataFromServiceNow(ENDPOINTS.GET_SPECIFIC_ASSIGNMENT_PATH, {
+//       user_email,
+//       record_sys_id,
+//     })
+
+//     if (jobDetails.error) {
+//       return res.status(jobDetails.status || 500).json({ error: jobDetails.error })
+//     }
+
+//     console.log("Job assignment details retrieved:", jobDetails)
+
+//     // Load the PDF and prepare it with fonts
+//     const { pdfDoc, customFont } = await loadPdfWithFont(pdfBuffer)
+
+//     // Fill the PDF form with job details
+//     const filledPdfDoc = await fillPdfForm(pdfDoc, customFont, jobDetails)
+
+//     // Save the modified PDF as binary
+//     const modifiedPdfBytes = await filledPdfDoc.save()
+//     const modifiedPdfBuffer = Buffer.from(modifiedPdfBytes)
+
+//     // Attach the PDF to ServiceNow
+//     await attachPdfToServiceNow(modifiedPdfBuffer, record_sys_id, "generated_document.pdf")
+
+//     // Now, call GET_ATTACHED_PDF to fetch the base64 content of the uploaded PDF
+//     console.log("Fetching attached PDF...")
+//     const getAttachedPdfResponse = await axios.get(`${ENDPOINTS.servicenowBaseURL}${ENDPOINTS.GET_ATTACHED_PDF}`, {
+//       auth: {
+//         username: process.env.SERVICENOW_USER,
+//         password: process.env.SERVICENOW_PASS,
+//       },
+//       headers: { "Content-Type": "application/json" },
+//       params: {
+//         user_email: user_email,
+//         record_sys_id: record_sys_id,
+//       },
+//     })
+
+//     console.log("Get attached PDF response:", getAttachedPdfResponse.data)
+
+//     if (!getAttachedPdfResponse.data.result || !getAttachedPdfResponse.data.result.base64_data) {
+//       return res.status(404).json({ error: "Failed to fetch attached PDF data." })
+//     }
+
+//     const updateJobDispositionResponse = await axios.put(
+//       `${ENDPOINTS.servicenowBaseURL}${ENDPOINTS.UPDATE_JOB_DISPOSITION_PATH}`,
+//       {
+//         u_state: "PDF Complete", // Set the status to "Form Complete"
+//         // Add any other required fields to the request body here
+//       },
+//       {
+//         auth: {
+//           username: process.env.SERVICENOW_USER,
+//           password: process.env.SERVICENOW_PASS,
+//         },
+//         headers: { "Content-Type": "application/json" },
+//         params: { user_email, record_sys_id },
+//       },
+//     )
+
+//     console.log("Job disposition updated:", updateJobDispositionResponse.data)
+
+//     // Return the base64 data of the attached PDF as response in your custom format
+//     res.status(200).json({
+//       file_name: getAttachedPdfResponse.data.result.file_name,
+//       content_type: getAttachedPdfResponse.data.result.content_type,
+//       base64_data: getAttachedPdfResponse.data.result.base64_data,
+//     })
+//   } catch (error) {
+//     console.error("Error processing PDF:", error.response ? error.response.data : error.message)
+//     res.status(500).json({ error: "Failed to process PDF" })
+//   }
+// }
 
 // 8. Generate PDF with signs and Attach it in the Record
 const signPdf = async (req, res) => {

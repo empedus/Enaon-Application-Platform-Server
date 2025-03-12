@@ -74,6 +74,16 @@ router.get("/", (req, res) => {
       returns: "Attached PDF",
     },
     {
+      method: "POST",
+      path: "/api/meter_app/upload_attachment",
+      description: "Upload attachment(s) and store them in ServiceNow",
+      requiredParams: ["user_email", "record_sys_id"],
+      requestBody: {
+        attachments: "Array of files to be uploaded as Multipart 'attachments'- 'file'",
+      },
+      returns: "Upload success status and file details",
+    },
+    {
       method: "GET",
       path: "/api/helper",
       description: "Get information about all available API endpoints",

@@ -1,12 +1,19 @@
 const jwt = require("jsonwebtoken");
 const { JwksClient } = require("jwks-rsa");
+require("dotenv").config(); // Load environment variables
 
 // JWT secret key from environment variables
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
-// Microsoft Azure AD tenant info
-const MICROSOFT_TENANT_ID = "a3c7e4a8-064f-46b8-b865-71bb73a6d678";
-const JWKS_URI = `https://login.microsoftonline.com/${MICROSOFT_TENANT_ID}/discovery/v2.0/keys`;
+const JWT_SECRET = process.env.JWT_SECRET;
+const MICROSOFT_TENANT_ID = process.env.MICROSOFT_TENANT_ID;
+const JWKS_URI = process.env.JWKS_URI.replace("${MICROSOFT_TENANT_ID}", MICROSOFT_TENANT_ID);
+const AUDIENCE = process.env.AUDIENCE;
+const ISSUER = process.env.ISSUER.replace("${MICROSOFT_TENANT_ID}", MICROSOFT_TENANT_ID);
+
+// Ensure required variables are set
+if (!JWT_SECRET || !MICROSOFT_TENANT_ID || !JWKS_URI || !AUDIENCE || !ISSUER) {
+  throw new Error("Missing required environment variables!");
+}
 
 // JWKS client for Microsoft token verification
 const jwksClient = new JwksClient({
@@ -36,7 +43,7 @@ const verifyToken = (token) => {
   }
 };
 
-// Extreme Debugging - Verify Microsoft token
+// Verify Microsoft token
 const verifyMicrosoftToken = async (token) => {
   try {
     // Decode the token header to extract the key ID (kid)
@@ -63,9 +70,8 @@ const verifyMicrosoftToken = async (token) => {
     // Verify the token using the fetched signing key
     console.log("Verifying token with signing key...");
     const decodedToken = jwt.verify(token, signingKey, {
-      audience: "4356db02-0c51-42c0-ae9e-6984e141a4be", // Your client ID
-      // audience: '00000003-0000-0000-c000-000000000000',  // Microsoft Graph audience
-      issuer: `https://login.microsoftonline.com/${MICROSOFT_TENANT_ID}/v2.0`,
+      audience: AUDIENCE, // Loaded from .env
+      issuer: ISSUER, // Loaded from .env
     });
 
     console.log("Token successfully verified: ", decodedToken);

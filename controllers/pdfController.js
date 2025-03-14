@@ -4,7 +4,7 @@ const { loadPdfWithFont, fillPdfForm, attachPdfToServiceNow, processSignatures }
 const ENDPOINTS = require("../utils/endpoints")
 const { PDFDocument } = require("pdf-lib")
 
-// Get Attached PDF
+// // Get Attached PDF
 const getattachedpdf = async (req, res) => {
   try {
     const { user_email, record_sys_id } = req.query; // Keep query params

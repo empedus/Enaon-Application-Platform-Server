@@ -6,5 +6,7 @@ const uploadController = require('../controllers/uploadController'); // Add this
  * POST /api/meter_app/upload_attachment
  */
 router.post("/upload_attachment", uploadController.uploadAttachments);
+router.post("/merge_attachments", uploadController.mergeAttachments);
+
 module.exports = router
 

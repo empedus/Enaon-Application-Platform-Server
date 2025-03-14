@@ -12,7 +12,7 @@ const storage = multer.memoryStorage(); // Store files in memory
 // Create multer upload instance with file size limit
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit per file
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit per file as serviceNow supports in record attachments
 }).array("attachments", 25); // Limit the number of files to 25
 
 class UploadController {

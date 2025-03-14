@@ -106,7 +106,7 @@ const authenticateUser = async (req, res) => {
     res.json({ result: { serviceNowData: serviceNowResponse.result, token } });
   } catch (error) {
     console.error("Error in authenticateUser:", error.message);
-    res.status(500).json({ error: "Failed to authenticate user" });
+    res.status(401).json({ success: false, error: error.message });
   }
 };
 

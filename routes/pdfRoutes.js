@@ -11,5 +11,6 @@ router.post("/sign_pdf", authorizeMeterApp, pdfController.signPdf)
 
 router.get("/get_attached_pdf", authorizeMeterApp, pdfController.getattachedpdf)
 
+router.get("/get_record_attachments", pdfController.getRecordAttachments)
 module.exports = router
 

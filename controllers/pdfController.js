@@ -55,6 +55,93 @@ const getattachedpdf = async (req, res) => {
   }
 };
 
+
+
+
+const getRecordAttachments = async (req, res) => {
+  try {
+    const { record_sys_id } = req.query; // Extract query parameter
+
+    // Step 1: Fetch the list of attachments
+    const getAttachmentsResponse = await axios.get(
+      `${ENDPOINTS.servicenowBaseURL}${ENDPOINTS.RETRIEVE_RECORD_ATTACHMENTS}`,
+      {
+        auth: {
+          username: process.env.SERVICENOW_USER,
+          password: process.env.SERVICENOW_PASS,
+        },
+        headers: { "Content-Type": "application/json" },
+        params: { sysparm_query: `table_sys_id=${record_sys_id}` },
+      }
+    );
+
+    console.log("Get attachments response:", getAttachmentsResponse.data);
+
+    const attachments = getAttachmentsResponse.data?.result || [];
+
+    if (attachments.length === 0) {
+      return res.status(404).json({ error: "No attachments found for this record." });
+    }
+
+    // Step 2: Download each attachment and convert to Base64
+    const attachmentsWithBase64 = [];
+    
+    // Iterate through all attachments
+    for (let att of attachments) {
+      try {
+        // Download each attachment as raw binary data
+        const fileResponse = await axios.get(att.download_link, {
+          auth: {
+            username: process.env.SERVICENOW_USER,
+            password: process.env.SERVICENOW_PASS,
+          },
+          responseType: "arraybuffer", // Get raw binary data
+        });
+
+        // Convert file to Base64
+        const base64Data = Buffer.from(fileResponse.data).toString("base64");
+
+        // Store the result
+        attachmentsWithBase64.push({
+          file_name: att.file_name,
+          content_type: att.content_type,
+          base64_data: base64Data,
+          sys_id: att.sys_id
+        });
+      } catch (downloadError) {
+        console.error(`Error downloading file: ${att.file_name}`, downloadError);
+        continue; // Skip this attachment if download fails
+      }
+    }
+
+    if (attachmentsWithBase64.length === 0) {
+      return res.status(500).json({ error: "Failed to download any attachments." });
+    }
+
+    // Step 3: Return the attachments as Base64
+    res.status(200).json({ attachments: attachmentsWithBase64 });
+
+  } catch (error) {
+    console.error("Error fetching attachments:", error);
+
+    if (error.response) {
+      return res.status(error.response.status).json({
+        error: error.response.data || "ServiceNow API error",
+      });
+    } else if (error.request) {
+      return res.status(503).json({ error: "No response received from ServiceNow API" });
+    } else {
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  }
+};
+
+
+
+
+
+
+
 // Generate PDF and Attach it in the Record
 const generatePdf = async (req, res) => {
   try {
@@ -164,7 +251,7 @@ const generatePdf = async (req, res) => {
     console.error("Error processing PDF:", error.response ? error.response.data : error.message)
     res.status(500).json({ error: "Failed to process PDF" })
   }
-}
+};
 
 // 8. Generate PDF with signs and Attach it in the Record
 const signPdf = async (req, res) => {
@@ -269,11 +356,12 @@ const signPdf = async (req, res) => {
     console.error("Error processing PDF:", error.message)
     res.status(500).json({ error: "Failed to process PDF" })
   }
-}
+};
 
 module.exports = {
   generatePdf,
   signPdf,
   getattachedpdf,
+  getRecordAttachments
 }
 

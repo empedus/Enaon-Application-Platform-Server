@@ -9,7 +9,7 @@ module.exports = {
   AUTH_PATH: "/api/x_eedat_meters_app/user_auth",
   UPDATE_JOB_DISPOSITION_PATH: "/api/x_eedat_meters_app/meter_app/job_dispositions/update",
   VEHICLES_PATH: "/api/x_eedat_meters_app/vehicles/get/all",
-  GET_PDF_TEMPLATE: "/api/x_eedat_meters_app/meter_app/get_pdf",
+  GET_PDF_TEMPLATE: "/api/x_eedat_meters_app/meter_app/get_pdf_template_sys_id",
   GET_ATTACHED_PDF: "/api/x_eedat_meters_app/meter_app/get_attached_pdf",
   RETRIEVE_RECORD_ATTACHMENTS: "/api/now/attachment"
 }

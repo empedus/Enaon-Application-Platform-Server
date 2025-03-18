@@ -101,10 +101,36 @@ const getWorkTypes = async (req, res) => {
   }
 }
 
+const getJobAssignmentState = async (req, res) => {
+  try {
+    const { user_email, record_sys_id } = req.query
+    if (!user_email || !record_sys_id)
+      return res.status(400).json({
+        error: "Missing required parameters: user_email and/or record_sys_id",
+      })
+
+    const serviceNowResponse = await getDataFromServiceNow(ENDPOINTS.GET_SPECIFIC_ASSIGNMENT_PATH, {
+      user_email,
+      record_sys_id,
+    })
+
+    if (serviceNowResponse.error) {
+      return res.status(serviceNowResponse.status || 500).json({ error: serviceNowResponse.error })
+    }
+
+    res.json(serviceNowResponse.result.job_assignments.map(job => ({
+      state: job.u_state?.displayValue || job.u_state?.value || null
+    })));  } catch (error) {
+    console.error("Error in /job_dispositions/get:", error.message)
+    res.status(500).json({ error: "Failed to fetch specific job assignment" })
+  }
+}
+
 module.exports = {
   getSpecificJobAssignment,
   getAllJobAssignments,
   updateJobAssignment,
   getWorkTypes,
+  getJobAssignmentState
 }
 

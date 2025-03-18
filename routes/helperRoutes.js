@@ -74,6 +74,13 @@ router.get("/", (req, res) => {
       returns: "Attached PDF",
     },
     {
+      method: "GET",
+      path: "/api/meter_app/get_record_attachments",
+      description: "Get all attachments for a record",
+      requiredParams: ["record_sys_id"],
+      returns: "List of attachments with base64 data",
+    },
+    {
       method: "POST",
       path: "/api/meter_app/upload_attachment",
       description: "Upload attachment(s) and store them in ServiceNow",
@@ -84,12 +91,29 @@ router.get("/", (req, res) => {
       returns: "Upload success status and file details",
     },
     {
+      method: "POST",
+      path: "/api/meter_app/merge_attachments",
+      description: "Merge multiple attachments into a single PDF and upload it to ServiceNow",
+      requiredParams: ["record_sys_id"],
+      requestBody: {},
+      returns: "Merged PDF upload status and file details",
+    },
+    {
+      method: "GET",
+      path: "/api/meter_app/job_disposition_state",
+      description: "Get the State from specific Job Assignment",
+      requiredParams: ["user_email", "record_sys_id"],
+      requestBody: {},
+      returns: [{"state": "Available State"}],
+    },
+    {
       method: "GET",
       path: "/api/helper",
       description: "Get information about all available API endpoints",
       requiredParams: [],
       returns: "List of all API endpoints with details",
     },
+    
   ]
 
   
@@ -109,4 +133,3 @@ router.get("/", (req, res) => {
 })
 
 module.exports = router
-

@@ -15,5 +15,8 @@ router.put("/update_job_disposition", authorizeMeterApp, jobController.updateJob
 // 5. Get available work types
 router.get("/work_types", authorizeMeterApp, jobController.getWorkTypes)
 
+router.get("/job_disposition_state", authorizeMeterApp, jobController.getJobAssignmentState)
+
+
 module.exports = router
 

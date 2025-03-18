@@ -13,6 +13,16 @@ router.get("/", (req, res) => {
       returns: "User authentication data and JWT token",
     },
     {
+      method: "POST",
+      path: "/api/auth/microsoft",
+      description: "Authenticate user with Microsoft ID token",
+      requiredParams: [],
+      requestBody: {
+        idToken: "Microsoft Azure ID token"
+      },
+      returns: "User authentication data and JWT token",
+    },
+    {
       method: "GET",
       path: "/api/meter_app/job_dispositions/get",
       description: "Get specific job assignment",

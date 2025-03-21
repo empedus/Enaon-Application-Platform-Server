@@ -78,110 +78,62 @@ class UploadService {
    * @param {String} userEmail - Email of the user uploading the file
    * @returns {Object} - Response from ServiceNow
    */
-  //   async uploadToServiceNow(fileBuffer, fileName, recordSysId, userEmail) {
-  //     const servicenowUser = process.env.SERVICENOW_USER;
-  //     const servicenowPass = process.env.SERVICENOW_PASS;
+    async uploadToServiceNow(fileBuffer, fileName, recordSysId, userEmail) {
+      const servicenowUser = process.env.SERVICENOW_USER;
+      const servicenowPass = process.env.SERVICENOW_PASS;
 
-  //     try {
-  //       // Create a new form-data instance
-  //     //   const form = new FormData();
+      try {
+        // Create a new form-data instance
+      //   const form = new FormData();
 
-  //     //   // Get the MIME type based on the file extension
-  //     //   const mimeType = mime.lookup(fileName) || 'application/octet-stream';
+      //   // Get the MIME type based on the file extension
+      //   const mimeType = mime.lookup(fileName) || 'application/octet-stream';
 
-  //     //   // Append the file buffer, with the filename and MIME type
-  //     //   form.append('file', fileBuffer, {
-  //     //     filename: fileName,
-  //     //     contentType: mimeType,
-  //     //   });
+      //   // Append the file buffer, with the filename and MIME type
+      //   form.append('file', fileBuffer, {
+      //     filename: fileName,
+      //     contentType: mimeType,
+      //   });
 
-  //     const mimeType = mime.lookup(fileName);
-  //       // Set up the API request parameters
-  //       const requestParams = {
-  //         table_name: "x_eedat_meters_app_job_assignments",  // The target table name
-  //         table_sys_id: recordSysId,  // Record Sys ID
-  //         file_name: fileName,  // File name
-  //       };
+      const mimeType = mime.lookup(fileName);
+        // Set up the API request parameters
+        const requestParams = {
+          table_name: "x_eedat_meters_app_job_assignments",  // The target table name
+          table_sys_id: recordSysId,  // Record Sys ID
+          file_name: fileName,  // File name
+        };
 
-  //       // Send the POST request with form data
-  //       const response = await axios.post(
-  //         `${ENDPOINTS.servicenowBaseURL}/api/now/attachment/file`,fileBuffer,
-  //         //form,
-  //         {
-  //           params: requestParams,
-  //            // ...form.getHeaders(),
-  //            headers: {
-  //             "Content-Type": mimeType,
-  //             Accept: "application/json",
-  //           },
-  //           auth: {
-  //             username: servicenowUser,
-  //             password: servicenowPass,
-  //           },
-  //           timeout: 30000,  // 30 seconds timeout for the API request
-  //         }
-  //       );
+        // Send the POST request with form data
+        const response = await axios.post(
+          `${ENDPOINTS.servicenowBaseURL}/api/now/attachment/file`,fileBuffer,
+          //form,
+          {
+            params: requestParams,
+             // ...form.getHeaders(),
+             headers: {
+              "Content-Type": "multipart/form-data",
+              Accept: "application/json",
+            },
+            auth: {
+              username: servicenowUser,
+              password: servicenowPass,
+            },
+            timeout: 30000,  // 30 seconds timeout for the API request
+          }
+        );
 
-  //       // Return the response from ServiceNow
-  //       return response.data;
-  //     } catch (error) {
-  //       console.error("Error uploading to ServiceNow:", error);
-  //       throw new Error("Failed to upload file to ServiceNow");
-  //     }
-  //   }
-  // }
-
-
-  async uploadToServiceNow(fileBuffer, fileName, recordSysId, userEmail) {
-    const servicenowUser = process.env.SERVICENOW_USER;
-    const servicenowPass = process.env.SERVICENOW_PASS;
-  
-    try {
-      // Create a new form-data instance
-      const form = new FormData();
-  
-      // Get the MIME type based on the file extension
-      const mimeType = mime.lookup(fileName) || 'application/octet-stream';
-  
-      // IMPORTANT: Add the required parameters to the form data
-      form.append('table_name', 'sys_attachment');
-      form.append('table_sys_id', recordSysId);
-      form.append('file_name', fileName);
-  
-      // Add the file to the form with the correct field name
-      form.append('attachments', fileBuffer, {
-        filename: fileName,
-        contentType: mimeType,
-      });
-  
-      // Send the POST request
-      const response = await axios.post(
-        `${ENDPOINTS.servicenowBaseURL}/api/now/attachment/upload`,
-        form,
-        {
-          headers: {
-            ...form.getHeaders(),
-            'Accept': 'application/json',
-          },
-          auth: {
-            username: servicenowUser,
-            password: servicenowPass,
-          },
-          timeout: 60000,
-        }
-      );
-  
-      // Return the response from ServiceNow
-      return response.data;
-    } catch (error) {
-      console.error("Error uploading to ServiceNow:", error);
-      if (error.response) {
-        console.error("Response status:", error.response.status);
-        console.error("Response data:", JSON.stringify(error.response.data, null, 2));
+        // Return the response from ServiceNow
+        return response.data;
+      } catch (error) {
+        console.error("Error uploading to ServiceNow:", error);
+        throw new Error("Failed to upload file to ServiceNow");
       }
-      throw new Error(`Failed to upload file ${fileName} to ServiceNow: ${error.message}`);
     }
   }
-}
+
+ 
+
+
+
 
 module.exports = new UploadService();

@@ -23,6 +23,19 @@ router.get("/", (req, res) => {
       returns: "User authentication data and JWT token",
     },
     {
+      method: "POST",
+      path: "/api/auth/update_username_pass",
+      description: "Update encrypted username and password for a user in ServiceNow",
+      requiredParams: [
+        { user_email: "User email (query parameter)" }
+      ],
+      requestBody: {
+        username: "Username string to be encrypted and saved",
+        password: "Password string to be encrypted and saved"
+      },
+      returns: "Response from ServiceNow indicating success or failure of the update",
+    },    
+    {
       method: "GET",
       path: "/api/meter_app/job_dispositions/get",
       description: "Get specific job assignment",

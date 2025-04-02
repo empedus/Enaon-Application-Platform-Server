@@ -99,6 +99,7 @@ const authenticateUser = async (req, res) => {
         : serviceNowResponse.result.user_email,
       accessible_apps: accessibleApps,
       name: verifiedToken.name, // Add user's name from Microsoft token
+      require_username_pass: serviceNowResponse.result.require_username_pass
     };
 
     // Generate and return your API token

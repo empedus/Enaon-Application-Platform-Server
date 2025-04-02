@@ -7,6 +7,6 @@ const authController = require("../controllers/authController")
 
 // Microsoft SSO authentication route
 router.post("/auth/microsoft", authController.authenticateUser);
-
+router.post("/auth/update_username_pass", authController.updateUsernamePass)
 module.exports = router
 

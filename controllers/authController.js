@@ -40,6 +40,8 @@ const { verifyMicrosoftToken } = require("../utils/jwtUtils");
 const { getDataFromServiceNow } = require("../services/serviceNowService");
 const { generateToken } = require("../utils/jwtUtils");
 const ENDPOINTS = require("../utils/endpoints");
+const { encrypt } = require("../utils/encrypt-decrypt");
+const axios = require("axios");
 
 const authenticateUser = async (req, res) => {
   try {
@@ -111,6 +113,64 @@ const authenticateUser = async (req, res) => {
   }
 };
 
+
+
+
+const updateUsernamePass = async (req, res) => {
+  try {
+    // Extract user_email and record_sys_id from the query parameters
+    const { user_email } = req.query;
+
+    // Extract username and password from the body of the request
+    const { username, password } = req.body;
+
+    // Validate the input parameters
+    if (!user_email || !username || !password) {
+      return res.status(400).json({ error: "Missing required parameters" });
+    }
+
+    // Encrypt the username and password
+    const encryptedUsername = encrypt(username);
+    const encryptedPassword = encrypt(password);
+
+    console.log("Encrypted Username:", encryptedUsername);
+    console.log("Encrypted Password:", encryptedPassword);
+
+    // Prepare the API URL
+    const apiUrl = `${ENDPOINTS.servicenowBaseURL}${ENDPOINTS.UPDATE_USERNAME_PASS}`;
+
+    // Log the request details for debugging
+    console.log(
+      "Making request to:",
+      apiUrl,
+      "with query params:",
+      { user_email },
+      "and body:",
+      { encrypted_username: encryptedUsername, encrypted_password: encryptedPassword }
+    );
+
+    // Make the PUT request to update the username and password
+    const response = await axios.post(apiUrl, {
+      encrypted_username: encryptedUsername,
+      encrypted_password: encryptedPassword,
+    }, {
+      auth: {
+        username: process.env.SERVICENOW_USER,
+        password: process.env.SERVICENOW_PASS,
+      },
+      headers: { "Content-Type": "application/json" },
+      params: { user_email },
+    });
+
+    // If the response is successful, send it back
+    res.json(response.data);
+  } catch (error) {
+    console.error("Error in updateUsernamePass:", error.message);
+    res.status(500).json({ error: "Failed to update username and password" });
+  }
+};
+
 module.exports = {
   authenticateUser,
+  updateUsernamePass
 };

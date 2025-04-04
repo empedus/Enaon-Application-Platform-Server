@@ -136,6 +136,109 @@ router.get("/", (req, res) => {
       requiredParams: [],
       returns: "List of all API endpoints with details",
     },
+    {
+      method: "POST",
+      path: "/api/navision/BarcodeScan",
+      description: "Scan barcode and retrieve information from Navision",
+      requiredParams: [],
+      requestBody: {
+        barcode: "Barcode string to scan"
+      },
+      returns: "Barcode scan results from Navision",
+    },
+    {
+      method: "POST",
+      path: "/api/navision/GetConnectionPressure",
+      description: "Get connection pressure information from Navision",
+      requiredParams: [],
+      returns: "Connection pressure data from Navision",
+    },
+    {
+      method: "POST",
+      path: "/api/navision/GetLocation",
+      description: "Get location information from Navision",
+      requiredParams: [],
+      requestBody: {
+        codeUnitName: "Integration",
+        functionName: "GetLocation",
+        paramArgs: []
+      },
+      returns: "Location data from Navision",
+    },
+    {
+      method: "POST",
+      path: "/api/navision/GetMeterWorkSheetComments",
+      description: "Get meter worksheet comments from Navision",
+      requiredParams: [],
+      requestBody: {
+        codeUnitName: "Integration",
+        functionName: "GetMeterWorkSheetComments",
+        paramArgs: []
+      },
+      returns: "Meter worksheet comments from Navision",
+    },
+    {
+      method: "POST",
+      path: "/api/navision/GetPhysicalLocation",
+      description: "Get physical location information from Navision",
+      requiredParams: [],
+      requestBody: {
+        codeUnitName: "Integration",
+        functionName: "GetPhysicalLocation",
+        paramArgs: []
+      },
+      returns: "Physical location data from Navision",
+    },
+    {
+      method: "POST",
+      path: "/api/navision/GetWorkTypeResult",
+      description: "Get work type results from Navision",
+      requiredParams: [],
+      returns: "Work type results from Navision",
+    },
+    {
+      method: "POST",
+      path: "/api/navision/Manufacturers",
+      description: "Get manufacturers information from Navision",
+      requiredParams: [],
+      requestBody: {
+        codeUnitName: "Integration",
+        functionName: "GetManufacturers",
+        paramArgs: []
+      },
+      returns: "Manufacturers data from Navision",
+    },
+    {
+      method: "POST",
+      path: "/api/navision/GetConsumptionPurpose",
+      description: "Get consumption purpose information from Navision",
+      requiredParams: [],
+      requestBody: {
+        codeUnitName: "Integration",
+        functionName: "GetConsumptionPurpose",
+        paramArgs: []
+      },
+      returns: "Consumption purpose data from Navision",
+    },
+    {
+      method: "POST",
+      path: "/api/navision/GetDisconectionMethods",
+      description: "Get disconnection methods from Navision",
+      requiredParams: [],
+      requestBody: {
+        codeUnitName: "Integration",
+        functionName: "GetDisconectionMethods",
+        paramArgs: []
+      },
+      returns: "Disconnection methods from Navision",
+    },
+    {
+      method: "GET",
+      path: "/api/navision/GetDisconnectionPhotos",
+      description: "Get disconnection photos from Navision",
+      requiredParams: ["ikasp"],
+      returns: "Disconnection photos from Navision",
+    },
     
   ]
 

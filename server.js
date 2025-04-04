@@ -20,6 +20,8 @@ const vehicleRoutes = require("./routes/vehicleRoutes")
 const pdfRoutes = require("./routes/pdfRoutes")
 const helperRoutes = require("./routes/helperRoutes")
 const uploadRoutes = require("./routes/attachmentRoutes")
+const navisionRoutes = require("./routes/navisionRoutes")
+
 // Use routes
 app.use("/api", authRoutes)
 app.use("/api/meter_app", jobRoutes)
@@ -27,6 +29,7 @@ app.use("/api", vehicleRoutes)
 app.use("/api/meter_app", pdfRoutes)
 app.use("/api/helper", helperRoutes)
 app.use("/api/meter_app", uploadRoutes)
+app.use("/api/navision", navisionRoutes)
 
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`)

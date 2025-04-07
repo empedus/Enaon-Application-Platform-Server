@@ -29,7 +29,7 @@ app.use("/api", vehicleRoutes)
 app.use("/api/meter_app", pdfRoutes)
 app.use("/api/helper", helperRoutes)
 app.use("/api/meter_app", uploadRoutes)
-app.use("/api/navision", navisionRoutes)
+app.use("/api/meter_app/navision", navisionRoutes)
 
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`)

@@ -576,8 +576,56 @@ const getDisconnectionPhotos = async (req, res) => {
   }
 }
 
+/**
+ * Function to upload a document with metadata to ServiceNow
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ */
+const uploadDocument = async (req, res) => {
+  try {
+    // Destructure document and meterFolder from request body
+    const { document, meterFolder } = req.body;
+
+    // Check if document and meterFolder are provided
+    if (!document || !document.FileName || !document.DocumentBase64Data || !meterFolder) {
+      return res.status(400).json({ error: "Document and meterFolder are required" });
+    }
+
+    // Construct the body data for the ServiceNow request
+    const requestBody = {
+      document: {
+        FileName: document.FileName,
+        DocumentBase64Data: document.DocumentBase64Data,
+      },
+      meterFolder: meterFolder
+    };
+
+    // Call ServiceNow API to upload the document
+    const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
+      ENDPOINTS.UPLOAD_DOCUMENT,  // Assuming this is the correct endpoint for uploading documents
+      requestBody,                // Send the constructed body data
+      'post',                     // Use POST method to send body data
+      false                       // Don't force query parameters, as we're sending a body
+    );
+
+    // If ServiceNow returns an error, return it as a response
+    if (serviceNowResponse.error) {
+      return res.status(serviceNowResponse.status || 500).json({ error: serviceNowResponse.error });
+    }
+
+    // Return the response from ServiceNow
+    res.json(serviceNowResponse);
+  } catch (error) {
+    console.error("Error in /UploadDocument:", error.message);
+    res.status(500).json({ error: "Failed to upload document" });
+  }
+}
+
+
+
 // Export all controller functions
 module.exports = {
+  uploadDocument,
   barcodeScan,
   getConnectionPressure,
   getLocation,

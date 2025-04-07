@@ -64,3 +64,11 @@ router.post("/GetDisconectionMethods", navisionController.getDisconnectionMethod
  */
 router.get("/GetDisconectionPhotos", navisionController.getDisconnectionPhotos)
 module.exports = router
+
+
+/**
+ * Route for Uploading Word Documents
+ * POST /api/navision/UploadDocument
+ */
+router.post("/UploadDocument", navisionController.uploadDocument)
+module.exports = router

@@ -25,6 +25,7 @@ module.exports = {
   GET_MANUFACTURERS: "/api/x_eedat_meters_app/navision/Manufacturers",
   GET_CONSUMPTION_PURPOSE: "/api/x_eedat_meters_app/navision/GetConsumptionPurpose",
   GET_DISCONNECTION_METHODS: "/api/x_eedat_meters_app/navision/GetDisconectionMethods",
-  GET_DISCONNECTION_PHOTOS: "/api/x_eedat_meters_app/navision/GetDisconnectionPhotos"
+  GET_DISCONNECTION_PHOTOS: "/api/x_eedat_meters_app/navision/GetDisconnectionPhotos",
+  UPLOAD_DOCUMENT: "/api/x_eedat_meters_app/navision/UploadDocument"
 }
 

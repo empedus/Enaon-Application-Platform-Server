@@ -72,3 +72,11 @@ module.exports = router
  */
 router.post("/UploadDocument", navisionController.uploadDocument)
 module.exports = router
+
+
+/**
+ * Route for Uploading Word Documents
+ * POST /api/navision/UploadDocument
+ */
+router.post("/DeactivateMeter", navisionController.deactivateMeter)
+module.exports = router

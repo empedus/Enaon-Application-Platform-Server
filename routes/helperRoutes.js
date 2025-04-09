@@ -239,6 +239,30 @@ router.get("/", (req, res) => {
       requiredParams: ["ikasp"],
       returns: "Disconnection photos from Navision",
     },
+    {
+      method: "POST",
+      path: "/api/navision/ActivateMeter",
+      description: "Activate a meter in Navision",
+      requiredParams: ["user_email", "record_sys_id"],
+      requestBody: {
+        codeUnitName: "Integration",
+        functionName: "ActivateMeter",
+        paramArgs: "Array of parameters required for meter activation"
+      },
+      returns: "Activation status and details from Navision",
+    },
+    {
+      method: "POST",
+      path: "/api/navision/DeactivateMeter",
+      description: "Deactivate a meter in Navision",
+      requiredParams: ["user_email", "record_sys_id"],
+      requestBody: {
+        codeUnitName: "Integration",
+        functionName: "DeactivateMeter",
+        paramArgs: "Array of parameters required for meter deactivation"
+      },
+      returns: "Deactivation status and details from Navision",
+    },
     
   ]
 

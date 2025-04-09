@@ -63,7 +63,6 @@ router.post("/GetDisconectionMethods", navisionController.getDisconnectionMethod
  * POST /api/navision/GetDisconectionPhotos
  */
 router.get("/GetDisconectionPhotos", navisionController.getDisconnectionPhotos)
-module.exports = router
 
 
 /**
@@ -71,12 +70,18 @@ module.exports = router
  * POST /api/navision/UploadDocument
  */
 router.post("/UploadDocument", navisionController.uploadDocument)
-module.exports = router
 
 
 /**
- * Route for Uploading Word Documents
- * POST /api/navision/UploadDocument
+ * Route for DeactivateMeter 
+ * POST /api/navision/DeactivateMeter
  */
 router.post("/DeactivateMeter", navisionController.deactivateMeter)
+
+
+/**
+ * Route for ActivateMeter
+ * POST /api/navision/ActivateMeter
+ */
+router.post("/ActivateMeter", navisionController.activateMeter)
 module.exports = router

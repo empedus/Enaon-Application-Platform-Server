@@ -707,7 +707,7 @@ const deactivateMeter = async (req, res) => {
       requestBody,
       "post",
       false,
-      { user_email: userEmail, record_Sys_id: recordSysId }
+      { user_email: userEmail, record_sys_id: recordSysId }
     );
 
     // If ServiceNow returns an error, return it as a response

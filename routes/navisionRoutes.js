@@ -84,4 +84,28 @@ router.post("/DeactivateMeter", navisionController.deactivateMeter)
  * POST /api/navision/ActivateMeter
  */
 router.post("/ActivateMeter", navisionController.activateMeter)
+
+
+/**
+ * Route for ActivateMeter
+ * POST /api/navision/ActivateMeter
+ */
+router.post("/ReactivateMeter", navisionController.reactivateMeter)
+
+
+/**
+ * Route for ReplaceMeter
+ * POST /api/navision/ReplaceMeter
+ */
+router.post("/ReplaceMeter", navisionController.replaceMeter)
+
+
+/**
+ * Route for GetWorkperson
+ * POST /api/navision/GetWorkperson
+ */
+router.post("/GetWorkperson", navisionController.getWorkperson)
+
+
+
 module.exports = router

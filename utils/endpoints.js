@@ -28,6 +28,9 @@ module.exports = {
   GET_DISCONNECTION_PHOTOS: "/api/x_eedat_meters_app/navision/GetDisconnectionPhotos",
   UPLOAD_DOCUMENT: "/api/x_eedat_meters_app/navision/UploadDocument",
   DEACTIVATE_METER: "/api/x_eedat_meters_app/navision/DeactivateMeter",
-  ACTIVATE_METER: "/api/x_eedat_meters_app/navision/ActivateMeter"
+  ACTIVATE_METER: "/api/x_eedat_meters_app/navision/ActivateMeter",
+  REACTIVATE_METER: "/api/x_eedat_meters_app/navision/ReactivateMeter",
+  REPLACE_METER: "/api/x_eedat_meters_app/navision/ReplaceMeter",
+  GET_WORKPERSON: "/api/x_eedat_meters_app/navision/GetWorkperson"
 }
 

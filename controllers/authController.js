@@ -146,13 +146,14 @@ const updateUsernamePass = async (req, res) => {
       "with query params:",
       { user_email },
       "and body:",
-      { encrypted_username: encryptedUsername, encrypted_password: encryptedPassword }
+      { encrypted_username: encryptedUsername, encrypted_password: encryptedPassword, username: username}
     );
 
     // Make the PUT request to update the username and password
     const response = await axios.post(apiUrl, {
       encrypted_username: encryptedUsername,
       encrypted_password: encryptedPassword,
+      username: username
     }, {
       auth: {
         username: process.env.SERVICENOW_USER,
@@ -165,10 +166,21 @@ const updateUsernamePass = async (req, res) => {
     // If the response is successful, send it back
     res.json(response.data);
   } catch (error) {
-    console.error("Error in updateUsernamePass:", error.message);
-    res.status(500).json({ error: "Failed to update username and password" });
+    // Check if the error is from the ServiceNow API response
+    if (error.response) {
+      // If ServiceNow returns an error, include that in the response
+      res.status(error.response.status || 500).json({
+        error: error.response.data.error || "Failed to update username and password",
+        serviceNowResponse: error.response.data,  // Include the response from ServiceNow
+      });
+    } else {
+      // For unexpected errors
+      console.error("Error in updateUsernamePass:", error.message);
+      res.status(500).json({ error: "Unexpected error occurred" });
+    }
   }
 };
+
 
 module.exports = {
   authenticateUser,

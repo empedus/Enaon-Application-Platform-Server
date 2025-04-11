@@ -325,14 +325,26 @@ const barcodeScan = async (req, res) => {
 };
 
 /**
- * Function to get connection pressure
+ * Function to get connection pressure based on user email
  * @param {object} req - Express request object
  * @param {object} res - Express response object
  */
 const getConnectionPressure = async (req, res) => {
   try {
+    // Extract user_email from the query params
+    const { user_email } = req.query;
+    if (!user_email) {
+      return res.status(400).json({ error: "Missing user_email parameter" });
+    }
+    console.log("User email:", user_email);
+
+    // Send user_email as query parameter to the service
     const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
-      ENDPOINTS.GET_CONNECTION_PRESSURE
+      ENDPOINTS.GET_CONNECTION_PRESSURE,
+      {}, // No request body
+      'post', // Explicitly provide method
+      false, // No need for request body
+      { user_email } // Include user_email in query parameters
     );
 
     if (serviceNowResponse.error) {
@@ -355,16 +367,20 @@ const getConnectionPressure = async (req, res) => {
  */
 const getLocation = async (req, res) => {
   try {
-    // Fixed: Uncommented the requestBody or removed it if not needed
-    const requestBody = {
-      codeUnitName: "Integration",
-      functionName: "GetLocation",
-      paramArgs: [],
-    };
+    // Extract user_email from the query params
+    const { user_email } = req.query;
+    if (!user_email) {
+      return res.status(400).json({ error: "Missing user_email parameter" });
+    }
+    console.log("User email:", user_email);
 
+    // Send user_email as query parameter to the service
     const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
       ENDPOINTS.GET_LOCATION,
-      requestBody
+      {}, // No request body
+      'post', // Explicitly provide method
+      false, // No need for request body
+      { user_email } // Include user_email in query parameters
     );
 
     if (serviceNowResponse.error) {
@@ -380,6 +396,10 @@ const getLocation = async (req, res) => {
   }
 };
 
+
+
+
+
 /**
  * Function to get meter worksheet comments
  * @param {object} req - Express request object
@@ -387,15 +407,21 @@ const getLocation = async (req, res) => {
  */
 const getMeterWorkSheetComments = async (req, res) => {
   try {
-    const requestBody = {
-      codeUnitName: "Integration",
-      functionName: "GetMeterWorkSheetComments",
-      paramArgs: [],
-    };
+    const { user_email } = req.query;  // Extract user_email from query params
 
+    if (!user_email) {
+      return res.status(400).json({ error: "Missing user_email query parameter" });
+    }
+
+    console.log("User email is " + user_email);
+
+    // Assuming you need to pass the user_email as part of the query parameters
     const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
       ENDPOINTS.GET_METER_WORKSHEET_COMMENTS,
-      requestBody
+      {}, // No request body needed now
+      'post', // Use POST method
+      false, // Not sending the request body
+      { user_email } // Pass user_email as query param
     );
 
     if (serviceNowResponse.error) {
@@ -411,6 +437,7 @@ const getMeterWorkSheetComments = async (req, res) => {
   }
 };
 
+
 /**
  * Function to get physical location information
  * @param {object} req - Express request object
@@ -418,15 +445,15 @@ const getMeterWorkSheetComments = async (req, res) => {
  */
 const getPhysicalLocation = async (req, res) => {
   try {
-    const requestBody = {
-      codeUnitName: "Integration",
-      functionName: "GetPhysicalLocation",
-      paramArgs: [],
-    };
-
+    const { user_email } = req.query;
+    console.log("User is " + user_email)
     const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
       ENDPOINTS.GET_PHYSICAL_LOCATION,
-      requestBody
+      {}, // No body
+      'post', // Explicitly provide method
+      false,
+      { user_email } // additionalQueryParams
+    
     );
 
     if (serviceNowResponse.error) {
@@ -443,16 +470,21 @@ const getPhysicalLocation = async (req, res) => {
 };
 
 /**
- * Function to get work type results
+ * Function to get worktyperesult information
  * @param {object} req - Express request object
  * @param {object} res - Express response object
  */
 const getWorkTypeResult = async (req, res) => {
   try {
+    const { user_email } = req.query;
+    console.log("User is " + user_email);
+
     const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
       ENDPOINTS.GET_WORK_TYPE_RESULT,
-      {},
-      "post"
+      {}, // No body data
+      'post', // Explicitly provide method
+      false, // No additional body content
+      { user_email } // additional query parameter
     );
 
     if (serviceNowResponse.error) {
@@ -468,6 +500,7 @@ const getWorkTypeResult = async (req, res) => {
   }
 };
 
+
 /**
  * Function to get manufacturers
  * @param {object} req - Express request object
@@ -475,29 +508,40 @@ const getWorkTypeResult = async (req, res) => {
  */
 const getManufacturers = async (req, res) => {
   try {
-    const requestBody = {
-      codeUnitName: "Integration",
-      functionName: "GetManufacturers",
-      paramArgs: [],
-    };
+    // Extract user_email from the query parameters
+    const { user_email } = req.query;
 
+    // Check if the user_email is provided
+    if (!user_email) {
+      return res.status(400).json({ error: "User email is required" });
+    }
+
+    console.log("User email: " + user_email);
+
+    // Send the user_email as a query parameter
     const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
       ENDPOINTS.GET_MANUFACTURERS,
-      requestBody
+      {}, // No body needed
+      'post', // Use GET method (since no body is being passed)
+      false, // No body is needed
+      { user_email } // Add the user_email query parameter to the request
     );
 
+    // Check for errors in the response
     if (serviceNowResponse.error) {
       return res
         .status(serviceNowResponse.status || 500)
         .json({ error: serviceNowResponse.error });
     }
 
+    // Send the successful response
     res.json(serviceNowResponse);
   } catch (error) {
     console.error("Error in /Manufacturers:", error.message);
     res.status(500).json({ error: "Failed to fetch manufacturers" });
   }
 };
+
 
 
 
@@ -541,46 +585,56 @@ const getWorkperson = async (req, res) => {
  */
 const getConsumptionPurpose = async (req, res) => {
   try {
-    const requestBody = {
-      codeUnitName: "Integration",
-      functionName: "GetConsumptionPurpose",
-      paramArgs: [],
-    };
+    const { user_email } = req.query;
+    
+    if (!user_email) {
+      return res.status(400).json({ error: "Missing user_email parameter" });
+    }
+    
+    console.log("User email: " + user_email);
 
+    // Call the service to fetch the data from Navision with user_email as query parameter
     const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
       ENDPOINTS.GET_CONSUMPTION_PURPOSE,
-      requestBody
+      {}, // No body, since it's just query params
+      'post', // Explicitly provide method as 'post'
+      false,
+      { user_email } // Sending user_email as additional query param
     );
 
+    // If the response has an error, return the error
     if (serviceNowResponse.error) {
       return res
         .status(serviceNowResponse.status || 500)
         .json({ error: serviceNowResponse.error });
     }
 
+    // If the request is successful, return the response from the service
     res.json(serviceNowResponse);
+    
   } catch (error) {
     console.error("Error in /GetConsumptionPurpose:", error.message);
     res.status(500).json({ error: "Failed to fetch consumption purpose data" });
   }
 };
 
+
 /**
- * Function to get disconnection methods
+ * Function to get disconnectionMethods information
  * @param {object} req - Express request object
  * @param {object} res - Express response object
  */
 const getDisconnectionMethods = async (req, res) => {
   try {
-    const requestBody = {
-      codeUnitName: "Integration",
-      functionName: "GetDisconectionMethods",
-      paramArgs: [],
-    };
-
+    const { user_email } = req.query;
+    console.log("User is " + user_email)
     const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
       ENDPOINTS.GET_DISCONNECTION_METHODS,
-      requestBody
+      {}, // No body
+      'post', // Explicitly provide method
+      false,
+      { user_email } // additionalQueryParams
+    
     );
 
     if (serviceNowResponse.error) {
@@ -592,7 +646,7 @@ const getDisconnectionMethods = async (req, res) => {
     res.json(serviceNowResponse);
   } catch (error) {
     console.error("Error in /GetDisconectionMethods:", error.message);
-    res.status(500).json({ error: "Failed to fetch disconnection methods" });
+    res.status(500).json({ error: "Failed to fetch disconnection Methods data" });
   }
 };
 

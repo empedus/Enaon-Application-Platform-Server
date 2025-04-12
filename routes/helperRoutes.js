@@ -263,6 +263,19 @@ router.get("/", (req, res) => {
       },
       returns: "Deactivation status and details from Navision",
     },
+
+    {
+      method: "POST",
+      path: "/api/navision/CreateWorksheet",
+      description: "CreateWorksheet in Navision",
+      requiredParams: ["user_email", "record_sys_id"],
+      requestBody: {
+        codeUnitName: "Integration",
+        functionName: "CreateWorksheet",
+        paramArgs: "Array of parameters required for worksheet creation"
+      },
+      returns: "Create status and details from Navision",
+    },
     
   ]
 

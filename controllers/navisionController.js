@@ -1168,6 +1168,113 @@ const replaceMeter = async (req, res) =>{
   }
 }
 
+
+/**
+ * Function to deactivate a meter
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ */
+const createWorksheet = async (req, res) =>{
+  try {
+    // Get user_email and record_Sys_id from query parameters
+    const userEmail = req.query.user_email;
+    const recordSysId = req.query.record_sys_id;
+
+    // Validate query parameters
+    if (!userEmail || !recordSysId) {
+      return res.status(400).json({
+        error:
+          "Missing required query parameters: user_email and record_sys_id are required",
+      });
+    }
+
+    // Step 1: Get attachments and convert PDF to Word
+    const attachmentsResult = await getRecordAttachmentsAndConvert(recordSysId);
+
+    // If there was an error getting or converting attachments, continue with the deactivation
+    // but include the error in the response
+    let attachmentsError = null;
+    let convertedAttachments = null;
+    let originalAttachments = null;
+
+    if (!attachmentsResult.success) {
+      attachmentsError = attachmentsResult.error;
+      console.warn(`Warning: ${attachmentsError}`);
+      // We'll continue with the deactivation process even if attachment conversion fails
+    } else {
+      convertedAttachments = attachmentsResult.data.convertedAttachments;
+      originalAttachments = attachmentsResult.data.originalAttachments;
+    }
+
+    // Step 2: Get the request body for deactivating the meter
+    // Clone the paramArgs array to avoid modifying the original request
+    const paramArgs = req.body.paramArgs ? [...req.body.paramArgs] : [];
+    
+    // Validate that paramArgs exists and is an array
+    if (!paramArgs || !Array.isArray(paramArgs)) {
+      return res
+        .status(400)
+        .json({ error: "paramArgs is required and must be an array" });
+    }
+    
+    // Generate a UUID
+    const WSTrnId = uuidv4();
+    console.log("Generated UUID:", WSTrnId);
+    
+  
+    // The position is fixed at index 19 (after the 19th element)
+    const insertPosition = 19;
+    
+    // Insert the UUID at the specified position
+    // If the array is shorter than the position, the UUID will be added at the end
+    if (paramArgs.length >= insertPosition) {
+      paramArgs.splice(insertPosition, 0, WSTrnId);
+    } else {
+      // If the array is shorter than expected, append the UUID
+      paramArgs.push(WSTrnId);
+      console.warn(`Warning: paramArgs array is shorter than expected (${paramArgs.length} < ${insertPosition}). UUID added at the end.`);
+    }
+
+    const requestBody = {
+      codeUnitName: "Integration",
+      functionName: "CreateWorksheet",
+      paramArgs: paramArgs,
+    };
+
+    // Print the request body to console for debugging
+    console.log("Request body for ServiceNow API:", JSON.stringify(requestBody, null, 2));
+
+    // Step 3: Call ServiceNow API to deactivate the meter with query parameters
+    const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
+      ENDPOINTS.CREATE_WORKSHEET,
+      requestBody,
+      "post",
+      false,
+      { user_email: userEmail, record_sys_id: recordSysId }
+    );
+
+    // If ServiceNow returns an error, return it as a response
+    if (serviceNowResponse.error) {
+      return res.status(serviceNowResponse.status || 500).json({
+        error: serviceNowResponse.error,
+        attachmentsError: attachmentsError,
+        convertedAttachments: convertedAttachments,
+      });
+    }
+
+    // Step 4: Return the response from ServiceNow along with the converted attachments
+    res.json({
+      ...serviceNowResponse,
+      attachmentsError: attachmentsError,
+      convertedAttachments: convertedAttachments,
+      originalAttachments: originalAttachments,
+    });
+  } catch (error) {
+    console.error("Error in /CreateWorksheet:", error.message);
+    res.status(500).json({ error: "Failed to create worksheet" });
+  }
+}
+
 // Export all controller functions
 module.exports = {
   uploadDocument,
@@ -1185,5 +1292,6 @@ module.exports = {
   activateMeter,
   reactivateMeter,
   replaceMeter,
+  createWorksheet,
   getWorkperson
 };

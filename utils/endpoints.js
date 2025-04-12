@@ -31,6 +31,7 @@ module.exports = {
   ACTIVATE_METER: "/api/x_eedat_meters_app/navision/ActivateMeter",
   REACTIVATE_METER: "/api/x_eedat_meters_app/navision/ReactivateMeter",
   REPLACE_METER: "/api/x_eedat_meters_app/navision/ReplaceMeter",
+  CREATE_WORKSHEET: "/api/x_eedat_meters_app/navision/CreateWorksheet",
   GET_WORKPERSON: "/api/x_eedat_meters_app/navision/GetWorkperson"
 }
 

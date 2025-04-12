@@ -107,5 +107,12 @@ router.post("/ReplaceMeter", navisionController.replaceMeter)
 router.post("/GetWorkperson", navisionController.getWorkperson)
 
 
+/**
+ * Route for CreateWorksheet
+ * POST /api/navision/CreateWorksheet
+ */
+router.post("/CreateWorksheet", navisionController.createWorksheet)
+
+
 
 module.exports = router

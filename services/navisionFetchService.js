@@ -99,6 +99,7 @@
 // };
 
 
+
 const axios = require("axios");
 const ENDPOINTS = require("../utils/endpoints");
 
@@ -206,6 +207,7 @@ const fetchDataFromNavisionThrowServiceNow = async (
   }
 };
 
+
 /**
  * Call ServiceNow API directly (for attachment operations)
  * @param {string} path - API endpoint path
@@ -232,7 +234,27 @@ const callServiceNowAPI = async (path, options = {}) => {
       ...options
     };
 
+    console.log(`Calling ServiceNow API: ${path}`);
     const response = await axios.get(url, config);
+    
+    // Print the response summary
+    console.log(`ServiceNow API Response (${path}):`);
+    console.log(`Status: ${response.status}`);
+    console.log(`Data type: ${typeof response.data}`);
+    
+    if (typeof response.data === 'object') {
+      console.log(`Top-level keys: ${Object.keys(response.data).join(', ')}`);
+      
+      // If there's a result property, print more details
+      if (response.data.result) {
+        console.log(`Result type: ${typeof response.data.result}`);
+        if (Array.isArray(response.data.result)) {
+          console.log(`Result is an array with ${response.data.result.length} items`);
+        } else if (typeof response.data.result === 'object') {
+          console.log(`Result keys: ${Object.keys(response.data.result).join(', ')}`);
+        }
+      }
+    }
     
     return { 
       success: true, 
@@ -241,6 +263,11 @@ const callServiceNowAPI = async (path, options = {}) => {
     };
   } catch (error) {
     console.error(`Error calling ServiceNow API ${path}:`, error.message);
+    
+    if (error.response) {
+      console.error(`Status: ${error.response.status}`);
+      console.error(`Error data: ${JSON.stringify(error.response.data)}`);
+    }
     
     return {
       success: false,

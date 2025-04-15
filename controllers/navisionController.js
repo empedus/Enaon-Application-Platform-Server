@@ -739,11 +739,6 @@ const uploadDocument = async (req, res) => {
   }
 };
 
-/**
- * Function to deactivate a meter
- * @param {object} req - Express request object
- * @param {object} res - Express response object
- */
 
 const deactivateMeter = async (req, res) => {
   try {
@@ -845,6 +840,7 @@ const deactivateMeter = async (req, res) => {
     res.status(500).json({ error: "Failed to deactivate meter" });
   }
 };
+
 
 
 

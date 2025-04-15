@@ -187,10 +187,10 @@
 //         .status(404)
 //         .json({ error: "PDF not found or invalid response from ServiceNow" });
 //     }
-    
+
 //     const pdfTemplateSysId = pdfResponse.data.result.pdf_template_sys_id;
 //     console.log('Received template sys_id ' + pdfTemplateSysId);
-    
+
 //     let getAttachmentsResponse;
 //     try {
 //       getAttachmentsResponse = await axios.get(
@@ -208,7 +208,7 @@
 //       console.error("Error retrieving attachments:", attachmentsError.message);
 //       return res.status(500).json({ error: "Failed to retrieve attachments from ServiceNow" });
 //     }
-    
+
 //     const attachment = getAttachmentsResponse.data?.result[0] || [];
 
 //     if (attachment.length === 0) {
@@ -216,7 +216,7 @@
 //         .status(404)
 //         .json({ error: "No attachments found for this record." });
 //     }
-    
+
 //     let fileResponse;
 //     let base64Data;
 //     try {
@@ -308,7 +308,6 @@
 //         }
 //       );
 
-      
 //     } catch (getAttachedPdfError) {
 //       console.error("Error fetching attached PDF:", getAttachedPdfError.message);
 //       return res.status(500).json({ error: "Failed to fetch attached PDF from ServiceNow" });
@@ -344,7 +343,7 @@
 //         .status(404)
 //         .json({ error: "No attachments found for this record." });
 //     }
-    
+
 //     let file;
 //     let base64;
 //     try {
@@ -363,7 +362,7 @@
 //       console.error("Error downloading file:", downloadError.message);
 //       return res.status(500).json({ error: "Failed to download attachment file" });
 //     }
-    
+
 //     // if (
 //     //   !getAttachedPdfResponse.data.result ||
 //     //   !getAttachedPdfResponse.data.result.attachment_sys_id
@@ -400,7 +399,7 @@
 //     res.status(200).json({
 //       file_name: attachment_name,
 //       base64_data: base64
-      
+
 //     });
 //   } catch (error) {
 //     console.error(
@@ -444,7 +443,6 @@
 //         }
 //       );
 
-      
 //     } catch (getAttachedPdfError) {
 //       console.error("Error fetching attached PDF:", getAttachedPdfError.message);
 //       return res.status(500).json({ error: "Failed to fetch attached PDF from ServiceNow" });
@@ -571,13 +569,12 @@
 //           "Job disposition updated:",
 //           updateJobDispositionResponse.data
 //         );
-        
 
 //         // // Return the base64 data of the attached PDF as response in your custom format
 //         // res.status(200).json({
 //         //   file_name: attachment_name,
 //         //   base64_data: base64
-          
+
 //         // });
 //       } catch (error) {
 //         console.error("Error processing signatures:", error);
@@ -597,7 +594,6 @@
 //   getRecordAttachments,
 // };
 
-
 const axios = require("axios");
 const { getDataFromServiceNow } = require("../services/serviceNowService");
 const {
@@ -610,7 +606,7 @@ const {
   fetchAttachmentById,
   downloadAttachmentAsBase64,
   fetchAttachedPdf,
-  updateJobDisposition
+  updateJobDisposition,
 } = require("../services/pdfService");
 const ENDPOINTS = require("../utils/endpoints");
 const { PDFDocument } = require("pdf-lib");
@@ -621,12 +617,17 @@ const getattachedpdf = async (req, res) => {
     const { user_email, record_sys_id } = req.query;
 
     if (!user_email || !record_sys_id) {
-      return res.status(400).json({ error: "Missing required query parameters: user_email or record_sys_id" });
+      return res
+        .status(400)
+        .json({
+          error:
+            "Missing required query parameters: user_email or record_sys_id",
+        });
     }
 
     // Use the new service function
     const pdfData = await fetchAttachedPdf(user_email, record_sys_id);
-    
+
     res.status(200).json(pdfData);
   } catch (error) {
     console.error("Error fetching attached PDF:", error);
@@ -636,9 +637,13 @@ const getattachedpdf = async (req, res) => {
         error: error.response.data || "ServiceNow API error",
       });
     } else if (error.request) {
-      return res.status(503).json({ error: "No response received from ServiceNow API" });
+      return res
+        .status(503)
+        .json({ error: "No response received from ServiceNow API" });
     } else {
-      return res.status(500).json({ error: error.message || "Internal server error" });
+      return res
+        .status(500)
+        .json({ error: error.message || "Internal server error" });
     }
   }
 };
@@ -648,9 +653,12 @@ const getRecordAttachments = async (req, res) => {
     const { record_sys_id } = req.query;
 
     // Step 1: Fetch the list of attachments using the service function
-    const response = await callServiceNowAPI(ENDPOINTS.RETRIEVE_RECORD_ATTACHMENTS, {
-      params: { sysparm_query: `table_sys_id=${record_sys_id}` }
-    });
+    const response = await callServiceNowAPI(
+      ENDPOINTS.RETRIEVE_RECORD_ATTACHMENTS,
+      {
+        params: { sysparm_query: `table_sys_id=${record_sys_id}` },
+      }
+    );
 
     if (!response.success) {
       return res.status(response.status || 500).json({ error: response.error });
@@ -659,7 +667,9 @@ const getRecordAttachments = async (req, res) => {
     const attachments = response.data?.result || [];
 
     if (attachments.length === 0) {
-      return res.status(404).json({ error: "No attachments found for this record." });
+      return res
+        .status(404)
+        .json({ error: "No attachments found for this record." });
     }
 
     // Step 2: Download each attachment and convert to Base64
@@ -678,13 +688,18 @@ const getRecordAttachments = async (req, res) => {
           sys_id: att.sys_id,
         });
       } catch (downloadError) {
-        console.error(`Error downloading file: ${att.file_name}`, downloadError);
+        console.error(
+          `Error downloading file: ${att.file_name}`,
+          downloadError
+        );
         continue; // Skip this attachment if download fails
       }
     }
 
     if (attachmentsWithBase64.length === 0) {
-      return res.status(500).json({ error: "Failed to download any attachments." });
+      return res
+        .status(500)
+        .json({ error: "Failed to download any attachments." });
     }
 
     // Step 3: Return the attachments as Base64
@@ -697,9 +712,13 @@ const getRecordAttachments = async (req, res) => {
         error: error.response.data || "ServiceNow API error",
       });
     } else if (error.request) {
-      return res.status(503).json({ error: "No response received from ServiceNow API" });
+      return res
+        .status(503)
+        .json({ error: "No response received from ServiceNow API" });
     } else {
-      return res.status(500).json({ error: error.message || "Internal server error" });
+      return res
+        .status(500)
+        .json({ error: error.message || "Internal server error" });
     }
   }
 };
@@ -723,10 +742,10 @@ const generatePdf = async (req, res) => {
     } catch (error) {
       return res.status(error.status || 500).json({ error: error.message });
     }
-    
+
     const pdfTemplateSysId = pdfTemplateData.pdf_template_sys_id;
-    console.log('Received template sys_id ' + pdfTemplateSysId);
-    
+    console.log("Received template sys_id " + pdfTemplateSysId);
+
     // Fetch the attachment using the service function
     let attachment;
     try {
@@ -734,7 +753,7 @@ const generatePdf = async (req, res) => {
     } catch (error) {
       return res.status(error.status || 500).json({ error: error.message });
     }
-    
+
     // Download the attachment as base64
     let base64Data;
     try {
@@ -763,7 +782,9 @@ const generatePdf = async (req, res) => {
       }
     } catch (jobDetailsError) {
       console.error("Error fetching job details:", jobDetailsError.message);
-      return res.status(500).json({ error: "Failed to fetch job assignment details" });
+      return res
+        .status(500)
+        .json({ error: "Failed to fetch job assignment details" });
     }
 
     console.log("Job assignment details retrieved:", jobDetails);
@@ -784,14 +805,17 @@ const generatePdf = async (req, res) => {
       return res.status(500).json({ error: "Failed to process PDF document" });
     }
 
-    const fileName = jobDetails.result?.job_assignments?.[0]?.u_ikasp?.value + ".pdf";
-    console.log('The filename is(HKASP) ' + fileName)
+    const fileName =
+      jobDetails.result?.job_assignments?.[0]?.u_ikasp?.value + ".pdf";
+    console.log("The filename is(HKASP) " + fileName);
     try {
       // Attach the PDF to ServiceNow
       await attachPdfToServiceNow(modifiedPdfBuffer, record_sys_id, fileName);
     } catch (attachError) {
       console.error("Error attaching PDF to ServiceNow:", attachError.message);
-      return res.status(500).json({ error: "Failed to attach PDF to ServiceNow" });
+      return res
+        .status(500)
+        .json({ error: "Failed to attach PDF to ServiceNow" });
     }
 
     // Fetch the attached PDF using the service function
@@ -855,12 +879,32 @@ const signPdf = async (req, res) => {
         // Save the modified PDF as binary
         const modifiedPdfBytes = await signedPdfDoc.save();
         const modifiedPdfBuffer = Buffer.from(modifiedPdfBytes);
+        let jobDetails;
+        try {
+          jobDetails = await getDataFromServiceNow(
+            ENDPOINTS.GET_SPECIFIC_ASSIGNMENT_PATH,
+            {
+              user_email,
+              record_sys_id,
+            }
+          );
 
+          if (jobDetails.error) {
+            return res
+              .status(jobDetails.status || 500)
+              .json({ error: jobDetails.error });
+          }
+        } catch (jobDetailsError) {
+          console.error("Error fetching job details:", jobDetailsError.message);
+          return res
+            .status(500)
+            .json({ error: "Failed to fetch job assignment details" });
+        }
         // Attach the signed PDF to ServiceNow
         await attachPdfToServiceNow(
           modifiedPdfBuffer,
           record_sys_id,
-          "20190001109987.pdf"
+          jobDetails.result?.job_assignments?.[0]?.u_ikasp?.value + ".pdf"
         );
 
         // Update job disposition
@@ -869,7 +913,7 @@ const signPdf = async (req, res) => {
         // Return success
         res.status(200).json({
           message: "PDF signed and uploaded successfully",
-          file_name: "generated_document_signed.pdf"
+          file_name: jobDetails.result?.job_assignments?.[0]?.u_ikasp?.value + ".pdf",
         });
       } catch (error) {
         console.error("Error processing signatures:", error);
@@ -877,7 +921,7 @@ const signPdf = async (req, res) => {
       }
     } else {
       return res.status(400).json({
-        error: "Both technician and customer signatures are required"
+        error: "Both technician and customer signatures are required",
       });
     }
   } catch (error) {

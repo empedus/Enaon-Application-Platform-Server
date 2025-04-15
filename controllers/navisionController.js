@@ -289,7 +289,7 @@ const {
   getRecordAttachmentsAndConvert,
 } = require("../services/navisionFetchService.js");
 const ENDPOINTS = require("../utils/endpoints");
-const { v4: uuidv4 } = require('uuid');
+const { v4: uuidv4 } = require("uuid");
 
 /**
  * Function to scan barcodes
@@ -342,7 +342,7 @@ const getConnectionPressure = async (req, res) => {
     const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
       ENDPOINTS.GET_CONNECTION_PRESSURE,
       {}, // No request body
-      'post', // Explicitly provide method
+      "post", // Explicitly provide method
       false, // No need for request body
       { user_email } // Include user_email in query parameters
     );
@@ -378,7 +378,7 @@ const getLocation = async (req, res) => {
     const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
       ENDPOINTS.GET_LOCATION,
       {}, // No request body
-      'post', // Explicitly provide method
+      "post", // Explicitly provide method
       false, // No need for request body
       { user_email } // Include user_email in query parameters
     );
@@ -396,10 +396,6 @@ const getLocation = async (req, res) => {
   }
 };
 
-
-
-
-
 /**
  * Function to get meter worksheet comments
  * @param {object} req - Express request object
@@ -407,10 +403,12 @@ const getLocation = async (req, res) => {
  */
 const getMeterWorkSheetComments = async (req, res) => {
   try {
-    const { user_email } = req.query;  // Extract user_email from query params
+    const { user_email } = req.query; // Extract user_email from query params
 
     if (!user_email) {
-      return res.status(400).json({ error: "Missing user_email query parameter" });
+      return res
+        .status(400)
+        .json({ error: "Missing user_email query parameter" });
     }
 
     console.log("User email is " + user_email);
@@ -419,7 +417,7 @@ const getMeterWorkSheetComments = async (req, res) => {
     const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
       ENDPOINTS.GET_METER_WORKSHEET_COMMENTS,
       {}, // No request body needed now
-      'post', // Use POST method
+      "post", // Use POST method
       false, // Not sending the request body
       { user_email } // Pass user_email as query param
     );
@@ -437,7 +435,6 @@ const getMeterWorkSheetComments = async (req, res) => {
   }
 };
 
-
 /**
  * Function to get physical location information
  * @param {object} req - Express request object
@@ -446,14 +443,13 @@ const getMeterWorkSheetComments = async (req, res) => {
 const getPhysicalLocation = async (req, res) => {
   try {
     const { user_email } = req.query;
-    console.log("User is " + user_email)
+    console.log("User is " + user_email);
     const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
       ENDPOINTS.GET_PHYSICAL_LOCATION,
       {}, // No body
-      'post', // Explicitly provide method
+      "post", // Explicitly provide method
       false,
       { user_email } // additionalQueryParams
-    
     );
 
     if (serviceNowResponse.error) {
@@ -482,7 +478,7 @@ const getWorkTypeResult = async (req, res) => {
     const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
       ENDPOINTS.GET_WORK_TYPE_RESULT,
       {}, // No body data
-      'post', // Explicitly provide method
+      "post", // Explicitly provide method
       false, // No additional body content
       { user_email } // additional query parameter
     );
@@ -499,7 +495,6 @@ const getWorkTypeResult = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch work type results" });
   }
 };
-
 
 /**
  * Function to get manufacturers
@@ -522,7 +517,7 @@ const getManufacturers = async (req, res) => {
     const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
       ENDPOINTS.GET_MANUFACTURERS,
       {}, // No body needed
-      'post', // Use GET method (since no body is being passed)
+      "post", // Use GET method (since no body is being passed)
       false, // No body is needed
       { user_email } // Add the user_email query parameter to the request
     );
@@ -541,9 +536,6 @@ const getManufacturers = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch manufacturers" });
   }
 };
-
-
-
 
 /**
  * Function to get workperson
@@ -576,8 +568,6 @@ const getWorkperson = async (req, res) => {
   }
 };
 
-
-
 /**
  * Function to get consumption purpose
  * @param {object} req - Express request object
@@ -586,18 +576,18 @@ const getWorkperson = async (req, res) => {
 const getConsumptionPurpose = async (req, res) => {
   try {
     const { user_email } = req.query;
-    
+
     if (!user_email) {
       return res.status(400).json({ error: "Missing user_email parameter" });
     }
-    
+
     console.log("User email: " + user_email);
 
     // Call the service to fetch the data from Navision with user_email as query parameter
     const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
       ENDPOINTS.GET_CONSUMPTION_PURPOSE,
       {}, // No body, since it's just query params
-      'post', // Explicitly provide method as 'post'
+      "post", // Explicitly provide method as 'post'
       false,
       { user_email } // Sending user_email as additional query param
     );
@@ -611,13 +601,11 @@ const getConsumptionPurpose = async (req, res) => {
 
     // If the request is successful, return the response from the service
     res.json(serviceNowResponse);
-    
   } catch (error) {
     console.error("Error in /GetConsumptionPurpose:", error.message);
     res.status(500).json({ error: "Failed to fetch consumption purpose data" });
   }
 };
-
 
 /**
  * Function to get disconnectionMethods information
@@ -627,14 +615,13 @@ const getConsumptionPurpose = async (req, res) => {
 const getDisconnectionMethods = async (req, res) => {
   try {
     const { user_email } = req.query;
-    console.log("User is " + user_email)
+    console.log("User is " + user_email);
     const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
       ENDPOINTS.GET_DISCONNECTION_METHODS,
       {}, // No body
-      'post', // Explicitly provide method
+      "post", // Explicitly provide method
       false,
       { user_email } // additionalQueryParams
-    
     );
 
     if (serviceNowResponse.error) {
@@ -646,7 +633,9 @@ const getDisconnectionMethods = async (req, res) => {
     res.json(serviceNowResponse);
   } catch (error) {
     console.error("Error in /GetDisconectionMethods:", error.message);
-    res.status(500).json({ error: "Failed to fetch disconnection Methods data" });
+    res
+      .status(500)
+      .json({ error: "Failed to fetch disconnection Methods data" });
   }
 };
 
@@ -692,8 +681,11 @@ const getDisconnectionPhotos = async (req, res) => {
  */
 const uploadDocument = async (req, res) => {
   try {
-    // Destructure document and meterFolder from request body
-    const { document, meterFolder } = req.body;
+    // If the request body is a string, parse it first
+    const parsedBody = JSON.parse(req.body); // Parse the string into an object
+    const { document, meterFolder } = parsedBody; // Destructure the parsed object
+
+    console.log("Received body", parsedBody);
 
     // Check if document and meterFolder are provided
     if (
@@ -739,7 +731,7 @@ const uploadDocument = async (req, res) => {
   }
 };
 
-
+const { getDataFromServiceNow } = require("../services/serviceNowService");
 const deactivateMeter = async (req, res) => {
   try {
     // Get user_email and record_Sys_id from query parameters
@@ -762,35 +754,99 @@ const deactivateMeter = async (req, res) => {
     let attachmentsError = null;
     let convertedAttachments = null;
     let originalAttachments = null;
+    var filename = "";
+    var jobDispositionCode = "";
 
     if (!attachmentsResult.success) {
       attachmentsError = attachmentsResult.error;
       console.warn(`Warning: ${attachmentsError}`);
       // We'll continue with the deactivation process even if attachment conversion fails
     } else {
-      convertedAttachments = attachmentsResult.data.convertedAttachments;
-      originalAttachments = attachmentsResult.data.originalAttachments;
+      convertedAttachments = attachmentsResult.data.convertedAttachments[0];
+      originalAttachments = attachmentsResult.data.originalAttachments[0];
+      filename = convertedAttachments.word_file_name;
     }
+
+    var user_email = userEmail;
+    var record_sys_id = recordSysId;
+    const serviceNowRes = await getDataFromServiceNow(
+      ENDPOINTS.GET_SPECIFIC_ASSIGNMENT_PATH,
+      {
+        user_email,
+        record_sys_id,
+      }
+    );
+
+    if (serviceNowRes.error) {
+      return res
+        .status(serviceNowRes.status || 500)
+        .json({ error: serviceNowRes.error });
+    } else {
+      jobDispositionCode =
+        serviceNowRes.result.job_assignments[0].u_work_code.value;
+    }
+
+    console.log("Job Disposition Code " + jobDispositionCode);
+    console.log("Filename " + filename);
+    const uploadDocumentRequestBody = {
+      document: {
+        FileName: filename,
+        DocumentBase64Data: convertedAttachments.base64_data,
+      },
+      meterFolder: jobDispositionCode,
+    };
+    console.log(
+      "uploadDocumentRequestBody " + JSON.stringify(uploadDocumentRequestBody)
+    );
+
+    const uploadResponse = await uploadDocument(
+      { body: JSON.stringify(uploadDocumentRequestBody) }, // mock req
+      {
+        status: function (code) {
+          this.statusCode = code;
+          return this;
+        },
+        json: function (data) {
+          uploadResultData = data;
+          console.log("Upload Response:", JSON.stringify(data, null, 2));
+        },
+      }
+    );
 
     // Step 2: Get the request body for deactivating the meter
     // Clone the paramArgs array to avoid modifying the original request
     const paramArgs = req.body.paramArgs ? [...req.body.paramArgs] : [];
-    
+
     // Validate that paramArgs exists and is an array
     if (!paramArgs || !Array.isArray(paramArgs)) {
       return res
         .status(400)
         .json({ error: "paramArgs is required and must be an array" });
     }
-    
+
+    // Insert uploadResponse.result.data at index 10 (11th position)
+    const uploadData = uploadResultData?.result?.data;
+
+    if (uploadData !== undefined) {
+      const uploadReplacePosition = 10;
+      if (paramArgs.length > uploadReplacePosition) {
+        paramArgs[uploadReplacePosition] = uploadData;
+      } else {
+        console.warn(
+          `Warning: paramArgs array is shorter than expected (${paramArgs.length} <= ${uploadReplacePosition}). Upload data not added.`
+        );
+      }
+    } else {
+      console.warn("Warning: No upload data found in uploadResponse.result.data");
+    }
     // Generate a UUID
     const WSTrnId = uuidv4();
     console.log("Generated UUID:", WSTrnId);
-    
+
     // Add the UUID after the 16th element (index 15)
     // The position is fixed at index 16 (after the 16th element)
     const insertPosition = 16;
-    
+
     // Insert the UUID at the specified position
     // If the array is shorter than the position, the UUID will be added at the end
     if (paramArgs.length >= insertPosition) {
@@ -798,7 +854,9 @@ const deactivateMeter = async (req, res) => {
     } else {
       // If the array is shorter than expected, append the UUID
       paramArgs.push(WSTrnId);
-      console.warn(`Warning: paramArgs array is shorter than expected (${paramArgs.length} < ${insertPosition}). UUID added at the end.`);
+      console.warn(
+        `Warning: paramArgs array is shorter than expected (${paramArgs.length} < ${insertPosition}). UUID added at the end.`
+      );
     }
 
     const requestBody = {
@@ -808,7 +866,10 @@ const deactivateMeter = async (req, res) => {
     };
 
     // Print the request body to console for debugging
-    console.log("Request body for ServiceNow API:", JSON.stringify(requestBody, null, 2));
+    console.log(
+      "Request body for ServiceNow API:",
+      JSON.stringify(requestBody, null, 2)
+    );
 
     // Step 3: Call ServiceNow API to deactivate the meter with query parameters
     const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
@@ -841,15 +902,12 @@ const deactivateMeter = async (req, res) => {
   }
 };
 
-
-
-
 /**
  * Function to deactivate a meter
  * @param {object} req - Express request object
  * @param {object} res - Express response object
  */
-const activateMeter = async (req, res) =>{
+const activateMeter = async (req, res) => {
   try {
     // Get user_email and record_Sys_id from query parameters
     const userEmail = req.query.user_email;
@@ -884,22 +942,22 @@ const activateMeter = async (req, res) =>{
     // Step 2: Get the request body for deactivating the meter
     // Clone the paramArgs array to avoid modifying the original request
     const paramArgs = req.body.paramArgs ? [...req.body.paramArgs] : [];
-    
+
     // Validate that paramArgs exists and is an array
     if (!paramArgs || !Array.isArray(paramArgs)) {
       return res
         .status(400)
         .json({ error: "paramArgs is required and must be an array" });
     }
-    
+
     // Generate a UUID
     const WSTrnId = uuidv4();
     console.log("Generated UUID:", WSTrnId);
-    
+
     // Add the UUID after the 16th element (index 15)
     // The position is fixed at index 24 (after the 16th element)
     const insertPosition = 24;
-    
+
     // Insert the UUID at the specified position
     // If the array is shorter than the position, the UUID will be added at the end
     if (paramArgs.length >= insertPosition) {
@@ -907,7 +965,9 @@ const activateMeter = async (req, res) =>{
     } else {
       // If the array is shorter than expected, append the UUID
       paramArgs.push(WSTrnId);
-      console.warn(`Warning: paramArgs array is shorter than expected (${paramArgs.length} < ${insertPosition}). UUID added at the end.`);
+      console.warn(
+        `Warning: paramArgs array is shorter than expected (${paramArgs.length} < ${insertPosition}). UUID added at the end.`
+      );
     }
 
     const requestBody = {
@@ -917,7 +977,10 @@ const activateMeter = async (req, res) =>{
     };
 
     // Print the request body to console for debugging
-    console.log("Request body for ServiceNow API:", JSON.stringify(requestBody, null, 2));
+    console.log(
+      "Request body for ServiceNow API:",
+      JSON.stringify(requestBody, null, 2)
+    );
 
     // Step 3: Call ServiceNow API to deactivate the meter with query parameters
     const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
@@ -948,14 +1011,14 @@ const activateMeter = async (req, res) =>{
     console.error("Error in /ActivateMeter:", error.message);
     res.status(500).json({ error: "Failed to activate meter" });
   }
-}
+};
 
 /**
  * Function to deactivate a meter
  * @param {object} req - Express request object
  * @param {object} res - Express response object
  */
-const reactivateMeter = async (req, res) =>{
+const reactivateMeter = async (req, res) => {
   try {
     // Get user_email and record_Sys_id from query parameters
     const userEmail = req.query.user_email;
@@ -990,22 +1053,22 @@ const reactivateMeter = async (req, res) =>{
     // Step 2: Get the request body for deactivating the meter
     // Clone the paramArgs array to avoid modifying the original request
     const paramArgs = req.body.paramArgs ? [...req.body.paramArgs] : [];
-    
+
     // Validate that paramArgs exists and is an array
     if (!paramArgs || !Array.isArray(paramArgs)) {
       return res
         .status(400)
         .json({ error: "paramArgs is required and must be an array" });
     }
-    
+
     // Generate a UUID
     const WSTrnId = uuidv4();
     console.log("Generated UUID:", WSTrnId);
-    
+
     // Add the UUID after the 16th element (index 15)
     // The position is fixed at index 24 (after the 16th element)
     const insertPosition = 16;
-    
+
     // Insert the UUID at the specified position
     // If the array is shorter than the position, the UUID will be added at the end
     if (paramArgs.length >= insertPosition) {
@@ -1013,7 +1076,9 @@ const reactivateMeter = async (req, res) =>{
     } else {
       // If the array is shorter than expected, append the UUID
       paramArgs.push(WSTrnId);
-      console.warn(`Warning: paramArgs array is shorter than expected (${paramArgs.length} < ${insertPosition}). UUID added at the end.`);
+      console.warn(
+        `Warning: paramArgs array is shorter than expected (${paramArgs.length} < ${insertPosition}). UUID added at the end.`
+      );
     }
 
     const requestBody = {
@@ -1023,7 +1088,10 @@ const reactivateMeter = async (req, res) =>{
     };
 
     // Print the request body to console for debugging
-    console.log("Request body for ServiceNow API:", JSON.stringify(requestBody, null, 2));
+    console.log(
+      "Request body for ServiceNow API:",
+      JSON.stringify(requestBody, null, 2)
+    );
 
     // Step 3: Call ServiceNow API to deactivate the meter with query parameters
     const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
@@ -1054,16 +1122,14 @@ const reactivateMeter = async (req, res) =>{
     console.error("Error in /ActivateMeter:", error.message);
     res.status(500).json({ error: "Failed to activate meter" });
   }
-}
-
-
+};
 
 /**
  * Function to deactivate a meter
  * @param {object} req - Express request object
  * @param {object} res - Express response object
  */
-const replaceMeter = async (req, res) =>{
+const replaceMeter = async (req, res) => {
   try {
     // Get user_email and record_Sys_id from query parameters
     const userEmail = req.query.user_email;
@@ -1098,22 +1164,22 @@ const replaceMeter = async (req, res) =>{
     // Step 2: Get the request body for deactivating the meter
     // Clone the paramArgs array to avoid modifying the original request
     const paramArgs = req.body.paramArgs ? [...req.body.paramArgs] : [];
-    
+
     // Validate that paramArgs exists and is an array
     if (!paramArgs || !Array.isArray(paramArgs)) {
       return res
         .status(400)
         .json({ error: "paramArgs is required and must be an array" });
     }
-    
+
     // Generate a UUID
     const WSTrnId = uuidv4();
     console.log("Generated UUID:", WSTrnId);
-    
+
     // Add the UUID after the 16th element (index 15)
     // The position is fixed at index 23 (after the 16th element)
     const insertPosition = 23;
-    
+
     // Insert the UUID at the specified position
     // If the array is shorter than the position, the UUID will be added at the end
     if (paramArgs.length >= insertPosition) {
@@ -1121,7 +1187,9 @@ const replaceMeter = async (req, res) =>{
     } else {
       // If the array is shorter than expected, append the UUID
       paramArgs.push(WSTrnId);
-      console.warn(`Warning: paramArgs array is shorter than expected (${paramArgs.length} < ${insertPosition}). UUID added at the end.`);
+      console.warn(
+        `Warning: paramArgs array is shorter than expected (${paramArgs.length} < ${insertPosition}). UUID added at the end.`
+      );
     }
 
     const requestBody = {
@@ -1131,7 +1199,10 @@ const replaceMeter = async (req, res) =>{
     };
 
     // Print the request body to console for debugging
-    console.log("Request body for ServiceNow API:", JSON.stringify(requestBody, null, 2));
+    console.log(
+      "Request body for ServiceNow API:",
+      JSON.stringify(requestBody, null, 2)
+    );
 
     // Step 3: Call ServiceNow API to deactivate the meter with query parameters
     const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
@@ -1162,15 +1233,14 @@ const replaceMeter = async (req, res) =>{
     console.error("Error in /ActivateMeter:", error.message);
     res.status(500).json({ error: "Failed to activate meter" });
   }
-}
-
+};
 
 /**
  * Function to deactivate a meter
  * @param {object} req - Express request object
  * @param {object} res - Express response object
  */
-const createWorksheet = async (req, res) =>{
+const createWorksheet = async (req, res) => {
   try {
     // Get user_email and record_Sys_id from query parameters
     const userEmail = req.query.user_email;
@@ -1205,22 +1275,21 @@ const createWorksheet = async (req, res) =>{
     // Step 2: Get the request body for deactivating the meter
     // Clone the paramArgs array to avoid modifying the original request
     const paramArgs = req.body.paramArgs ? [...req.body.paramArgs] : [];
-    
+
     // Validate that paramArgs exists and is an array
     if (!paramArgs || !Array.isArray(paramArgs)) {
       return res
         .status(400)
         .json({ error: "paramArgs is required and must be an array" });
     }
-    
+
     // Generate a UUID
     const WSTrnId = uuidv4();
     console.log("Generated UUID:", WSTrnId);
-    
-  
+
     // The position is fixed at index 19 (after the 19th element)
     const insertPosition = 19;
-    
+
     // Insert the UUID at the specified position
     // If the array is shorter than the position, the UUID will be added at the end
     if (paramArgs.length >= insertPosition) {
@@ -1228,7 +1297,9 @@ const createWorksheet = async (req, res) =>{
     } else {
       // If the array is shorter than expected, append the UUID
       paramArgs.push(WSTrnId);
-      console.warn(`Warning: paramArgs array is shorter than expected (${paramArgs.length} < ${insertPosition}). UUID added at the end.`);
+      console.warn(
+        `Warning: paramArgs array is shorter than expected (${paramArgs.length} < ${insertPosition}). UUID added at the end.`
+      );
     }
 
     const requestBody = {
@@ -1238,7 +1309,10 @@ const createWorksheet = async (req, res) =>{
     };
 
     // Print the request body to console for debugging
-    console.log("Request body for ServiceNow API:", JSON.stringify(requestBody, null, 2));
+    console.log(
+      "Request body for ServiceNow API:",
+      JSON.stringify(requestBody, null, 2)
+    );
 
     // Step 3: Call ServiceNow API to deactivate the meter with query parameters
     const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
@@ -1269,7 +1343,7 @@ const createWorksheet = async (req, res) =>{
     console.error("Error in /CreateWorksheet:", error.message);
     res.status(500).json({ error: "Failed to create worksheet" });
   }
-}
+};
 
 // Export all controller functions
 module.exports = {
@@ -1289,5 +1363,5 @@ module.exports = {
   reactivateMeter,
   replaceMeter,
   createWorksheet,
-  getWorkperson
+  getWorkperson,
 };

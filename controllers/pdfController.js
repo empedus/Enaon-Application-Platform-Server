@@ -784,8 +784,8 @@ const generatePdf = async (req, res) => {
       return res.status(500).json({ error: "Failed to process PDF document" });
     }
 
-    const fileName = jobDetails.result?.job_assignments?.[0]?.u_hkasp?.value + ".pdf";
-    
+    const fileName = jobDetails.result?.job_assignments?.[0]?.u_ikasp?.value + ".pdf";
+    console.log('The filename is(HKASP) ' + fileName)
     try {
       // Attach the PDF to ServiceNow
       await attachPdfToServiceNow(modifiedPdfBuffer, record_sys_id, fileName);

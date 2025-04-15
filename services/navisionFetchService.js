@@ -300,81 +300,188 @@ const downloadAttachmentAsBase64 = async (downloadLink) => {
   }
 };
 
+// /**
+//  * Convert PDF Base64 to Word Base64 using officegen
+//  * @param {string} pdfBase64 - Base64 encoded PDF
+//  * @returns {Promise<string>} - Base64 encoded Word document
+//  */
+// const convertPdfToWord = async (pdfBase64) => {
+//   try {
+//     // Import required libraries
+//     const officegen = require('officegen');
+//     const pdf = require('pdf-parse');
+    
+//     // Create buffer from base64
+//     const pdfBuffer = Buffer.from(pdfBase64, 'base64');
+    
+//     // Parse PDF to extract text
+//     const pdfData = await pdf(pdfBuffer);
+    
+//     // Create a Word document
+//     const docx = officegen('docx');
+    
+//     // Set document properties
+//     docx.setDocSubject('Converted from PDF');
+//     docx.setDocKeywords('PDF, Word, Conversion');
+//     docx.setDescription('Document converted from PDF to Word');
+    
+//     // Split text into paragraphs
+//     const paragraphs = pdfData.text
+//       .split('\n')
+//       .filter(line => line.trim() !== '');
+    
+//     // Add paragraphs to the document
+//     for (const text of paragraphs) {
+//       const p = docx.createP();
+//       p.addText(text);
+//     }
+    
+//     // Create a buffer to store the Word document
+//     const chunks = [];
+    
+//     // Generate the document and collect chunks
+//     return new Promise((resolve, reject) => {
+//       // Create a writable stream that collects chunks
+//       const outputStream = new require('stream').Writable({
+//         write(chunk, encoding, callback) {
+//           chunks.push(chunk);
+//           callback();
+//         }
+//       });
+      
+//       // Handle document generation events
+//       docx.on('finalize', function() {
+//         console.log('Word document finalized');
+//       });
+      
+//       docx.on('error', function(err) {
+//         console.error('Error creating Word document:', err);
+//         reject(err);
+//       });
+      
+//       // Pipe the document to our stream
+//       docx.generate(outputStream);
+      
+//       // When the stream ends, combine chunks and convert to base64
+//       outputStream.on('finish', function() {
+//         const wordBuffer = Buffer.concat(chunks);
+//         const wordBase64 = wordBuffer.toString('base64');
+//         console.log(`Word document created (${wordBuffer.length} bytes)`);
+//         resolve(wordBase64);
+//       });
+      
+//       outputStream.on('error', function(err) {
+//         console.error('Error in output stream:', err);
+//         reject(err);
+//       });
+//     });
+//   } catch (error) {
+//     console.error('Error converting PDF to Word:', error.message);
+//     throw error;
+//   }
+// };
+
+
 /**
- * Convert PDF Base64 to Word Base64 using officegen
+ * Convert PDF Base64 to Word Base64 using CloudConvert API
  * @param {string} pdfBase64 - Base64 encoded PDF
  * @returns {Promise<string>} - Base64 encoded Word document
  */
 const convertPdfToWord = async (pdfBase64) => {
   try {
     // Import required libraries
-    const officegen = require('officegen');
-    const pdf = require('pdf-parse');
-    
+    const axios = require('axios');
+    const FormData = require('form-data');
+    const { Readable } = require('stream');
+
+    // API key for CloudConvert
+    const API_KEY = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIxIiwianRpIjoiZDliMDdlY2JmYjRmYTU2MDg5NjU5NTdjYjJjYzA0NjRlZjBiZDAwYTlkMmI5Yjg3MTlmZWViM2ZhMGQ4ODlkNzg4Y2I4YTg0ZTIxNjcyZjIiLCJpYXQiOjE3NDQyOTMyOTAuNDcwNDY5LCJuYmYiOjE3NDQyOTMyOTAuNDcwNDcsImV4cCI6NDg5OTk2Njg5MC40NjYxMzQsInN1YiI6IjcxNTk5NDkwIiwic2NvcGVzIjpbInVzZXIucmVhZCIsInVzZXIud3JpdGUiLCJ0YXNrLnJlYWQiLCJ0YXNrLndyaXRlIiwid2ViaG9vay5yZWFkIiwid2ViaG9vay53cml0ZSIsInByZXNldC5yZWFkIiwicHJlc2V0LndyaXRlIl19.A8842oE7OQpf0X9wmg1--FoDt2jkFjz2TkMUsdo6fLCO69bLsu6hSOAZZC3kyMS-O-HVXnHH_GKYzIT16raLyuUHWrIUkjEXdJi2L9QObB4Bd22DThZqCGii13ohGgEGiZCl2GKUR_ww8n--z2YGxxE1KEPQaHAZFfsDjkcKj2007flyiQnM8tYMnu69C5WF4EEjaC-C8y4wNXHLkzRW8_ILz3aXM1davmHDEfvVqaORnWmhid1KFSXkIlIkLhtmoL3wWYUQQfHuN303rsmorWC04xIlgx09B0gNOKf-k38KfHksuSAG2Qkm7Wcf7sid9iMUc2GLCD_FSoOF31AKO84cE9yRKUHa8ZwGaR3Rh7ZH7fdlneIKyjguYZ_5KechqiUvtbrjyzH_AEO2ccf5edYl_BDRU1Qx7Bjop_LXYMa32eo8s_EkmTNZgPd3BvXdUf2m3q_4OAZt7iaF0bk06qT4-g8_7noLGdsRyL8nflthnhwej-f-54XA6O_-Qo398Ar6KGTvb_5pNoC0r9sjwiT7W1IwkLyHXwP8HvzOhkQD3UqI31umCu78FxS-JuPuw3tG58qKfscHGPoGeuUUi9ppLhp4Ill4XjtElqsbK4mAOh9_rX9M3HyrQ3ORTfXYbViic9cTop8d_0H42yXlQ4UVfF0Akzs1pvTa9TCpfXs';
+
     // Create buffer from base64
     const pdfBuffer = Buffer.from(pdfBase64, 'base64');
-    
-    // Parse PDF to extract text
-    const pdfData = await pdf(pdfBuffer);
-    
-    // Create a Word document
-    const docx = officegen('docx');
-    
-    // Set document properties
-    docx.setDocSubject('Converted from PDF');
-    docx.setDocKeywords('PDF, Word, Conversion');
-    docx.setDescription('Document converted from PDF to Word');
-    
-    // Split text into paragraphs
-    const paragraphs = pdfData.text
-      .split('\n')
-      .filter(line => line.trim() !== '');
-    
-    // Add paragraphs to the document
-    for (const text of paragraphs) {
-      const p = docx.createP();
-      p.addText(text);
+
+    // Create the job definition
+    const jobConfig = {
+      tasks: {
+        import_pdf: {
+          operation: 'import/upload'
+        },
+        convert: {
+          operation: 'convert',
+          input: 'import_pdf',
+          input_format: 'pdf',
+          output_format: 'docx'
+        },
+        export_docx: {
+          operation: 'export/url',
+          input: 'convert'
+        }
+      }
+    };
+
+    // Step 1: Create the job
+    console.log('Creating conversion job...');
+    const jobRes = await axios.post(
+      'https://api.cloudconvert.com/v2/jobs',
+      jobConfig,
+      { headers: { Authorization: `Bearer ${API_KEY}` } }
+    );
+
+    const uploadTask = jobRes.data.data.tasks.find(t => t.name === 'import_pdf');
+    const uploadUrl = uploadTask.result.form.url;
+    const formFields = uploadTask.result.form.parameters;
+
+    // Step 2: Upload the PDF buffer
+    console.log('Uploading PDF data...');
+    const form = new FormData();
+    for (const [key, value] of Object.entries(formFields)) {
+      form.append(key, value);
     }
     
-    // Create a buffer to store the Word document
-    const chunks = [];
+    // Create a readable stream from the buffer
+    const bufferStream = new Readable();
+    bufferStream.push(pdfBuffer);
+    bufferStream.push(null); // Signal the end of the stream
     
-    // Generate the document and collect chunks
-    return new Promise((resolve, reject) => {
-      // Create a writable stream that collects chunks
-      const outputStream = new require('stream').Writable({
-        write(chunk, encoding, callback) {
-          chunks.push(chunk);
-          callback();
-        }
-      });
-      
-      // Handle document generation events
-      docx.on('finalize', function() {
-        console.log('Word document finalized');
-      });
-      
-      docx.on('error', function(err) {
-        console.error('Error creating Word document:', err);
-        reject(err);
-      });
-      
-      // Pipe the document to our stream
-      docx.generate(outputStream);
-      
-      // When the stream ends, combine chunks and convert to base64
-      outputStream.on('finish', function() {
-        const wordBuffer = Buffer.concat(chunks);
-        const wordBase64 = wordBuffer.toString('base64');
-        console.log(`Word document created (${wordBuffer.length} bytes)`);
-        resolve(wordBase64);
-      });
-      
-      outputStream.on('error', function(err) {
-        console.error('Error in output stream:', err);
-        reject(err);
-      });
+    form.append('file', bufferStream, {
+      filename: 'document.pdf',
+      contentType: 'application/pdf',
     });
+
+    await axios.post(uploadUrl, form, { headers: form.getHeaders() });
+
+    // Step 3: Wait for the job to finish
+    console.log('Processing conversion...');
+    let jobStatus;
+    let statusRes;
+    do {
+      await new Promise(r => setTimeout(r, 1000));
+      statusRes = await axios.get(
+        `https://api.cloudconvert.com/v2/jobs/${jobRes.data.data.id}`,
+        { headers: { Authorization: `Bearer ${API_KEY}` } }
+      );
+      jobStatus = statusRes.data.data.status;
+      console.log(`Job status: ${jobStatus}`);
+    } while (jobStatus !== 'finished' && jobStatus !== 'error');
+
+    if (jobStatus === 'error') {
+      const errorTask = statusRes.data.data.tasks.find(t => t.status === 'error');
+      throw new Error(`Conversion failed: ${errorTask?.message || 'Unknown error'}`);
+    }
+
+    // Step 4: Download the resulting DOCX as buffer
+    console.log('Downloading converted DOCX...');
+    const exportTask = statusRes.data.data.tasks.find(t => t.name === 'export_docx');
+    const fileUrl = exportTask.result.files[0].url;
+
+    const fileResponse = await axios.get(fileUrl, { responseType: 'arraybuffer' });
+    const wordBuffer = Buffer.from(fileResponse.data);
+    
+    // Convert buffer to base64
+    const wordBase64 = wordBuffer.toString('base64');
+    console.log(`Word document created (${wordBuffer.length} bytes)`);
+    
+    return wordBase64;
   } catch (error) {
     console.error('Error converting PDF to Word:', error.message);
     throw error;

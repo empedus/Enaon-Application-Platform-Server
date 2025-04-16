@@ -69,7 +69,7 @@ router.get("/GetDisconectionPhotos",authorizeMeterApp, navisionController.getDis
  * Route for Uploading Word Documents
  * POST /api/navision/UploadDocument
  */
-router.post("/UploadDocument",authorizeMeterApp, navisionController.uploadDocument)
+//router.post("/UploadDocument",authorizeMeterApp, navisionController.uploadDocument)
 
 
 /**

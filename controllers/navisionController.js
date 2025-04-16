@@ -1900,7 +1900,6 @@ const createWorksheet = async (req, res) => {
 
 // Export all controller functions
 module.exports = {
-  uploadDocument,
   barcodeScan,
   getConnectionPressure,
   getLocation,

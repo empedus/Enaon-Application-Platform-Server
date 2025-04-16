@@ -584,10 +584,209 @@ const getRecordAttachmentsAndConvert = async (recordSysId) => {
   }
 };
 
+
+
+
+
+
+/**
+ * Function to upload a document with metadata to ServiceNow
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ */
+const uploadDocument = async (req, res) => {
+  try {
+    // If the request body is a string, parse it first
+    const parsedBody = JSON.parse(req.body); // Parse the string into an object
+    const { document, meterFolder } = parsedBody; // Destructure the parsed object
+
+    console.log("Received body", parsedBody);
+
+    // Check if document and meterFolder are provided
+    if (
+      !document ||
+      !document.FileName ||
+      !document.DocumentBase64Data ||
+      !meterFolder
+    ) {
+      return res
+        .status(400)
+        .json({ error: "Document and meterFolder are required" });
+    }
+
+    // Construct the body data for the ServiceNow request
+    const requestBody = {
+      document: {
+        FileName: document.FileName,
+        DocumentBase64Data: document.DocumentBase64Data,
+      },
+      meterFolder: meterFolder,
+    };
+
+    // Call ServiceNow API to upload the document
+    const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
+      ENDPOINTS.UPLOAD_DOCUMENT, // Assuming this is the correct endpoint for uploading documents
+      requestBody, // Send the constructed body data
+      "post", // Use POST method to send body data
+      false // Don't force query parameters, as we're sending a body
+    );
+
+    // If ServiceNow returns an error, return it as a response
+    if (serviceNowResponse.error) {
+      return res
+        .status(serviceNowResponse.status || 500)
+        .json({ error: serviceNowResponse.error });
+    }
+
+    // Return the response from ServiceNow
+    res.json(serviceNowResponse);
+  } catch (error) {
+    console.error("Error in /UploadDocument:", error.message);
+    res.status(500).json({ error: "Failed to upload document" });
+  }
+};
+
+/**
+ * Handles document upload process for Navision operations
+ * @param {string} userEmail - User email
+ * @param {string} recordSysId - Record system ID
+ * @param {object} convertedAttachments - Converted attachments data
+ * @returns {object} - Upload result data and job disposition code
+ */
+const { getDataFromServiceNow } = require("../services/serviceNowService");
+
+const handleDocumentUpload = async (userEmail, recordSysId, convertedAttachments) => {
+  let uploadResultData = null;
+  let jobDispositionCode = "";
+  let filename = "";
+  
+  try {
+    // Only proceed if we have converted attachments
+    if (convertedAttachments) {
+      filename = convertedAttachments.word_file_name;
+      
+      // Get job disposition code from ServiceNow
+      const serviceNowRes = await getDataFromServiceNow(
+        ENDPOINTS.GET_SPECIFIC_ASSIGNMENT_PATH,
+        {
+          user_email: userEmail,
+          record_sys_id: recordSysId,
+        }
+      );
+  
+      if (serviceNowRes.error) {
+        return { 
+          error: serviceNowRes.error, 
+          status: serviceNowRes.status || 500 
+        };
+      } else {
+        jobDispositionCode =
+          serviceNowRes.result.job_assignments[0].u_work_code.value;
+      }
+  
+      console.log("Job Disposition Code " + jobDispositionCode);
+      console.log("Filename " + filename);
+      
+      // Create upload document request body
+      const uploadDocumentRequestBody = {
+        document: {
+          FileName: filename,
+          DocumentBase64Data: convertedAttachments.base64_data,
+        },
+        meterFolder: jobDispositionCode,
+      };
+      
+      // console.log(
+      //   "uploadDocumentRequestBody " + JSON.stringify(uploadDocumentRequestBody)
+      // );
+  
+      // Upload the document
+      await uploadDocument(
+        { body: JSON.stringify(uploadDocumentRequestBody) }, // mock req
+        {
+          status: function (code) {
+            this.statusCode = code;
+            return this;
+          },
+          json: function (data) {
+            uploadResultData = data;
+            console.log("Upload Response:", JSON.stringify(data, null, 2));
+          },
+        }
+      );
+    }
+    
+    return {
+      success: true,
+      uploadResultData,
+      jobDispositionCode
+    };
+  } catch (error) {
+    console.error("Error in handleDocumentUpload:", error.message);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+/**
+ * Get the upload replace position based on the action type
+ * @param {string} actionType - The type of action (deactivate, activate, replace, reactivate, createWorksheet)
+ * @returns {number} - The position to replace in the paramArgs array
+ */
+const getUploadReplacePosition = (actionType) => {
+  switch (actionType.toLowerCase()) {
+    case 'deactivate':
+      return 10;
+    case 'activate':
+      return 13;
+    case 'replace':
+      return 10;
+    case 'reactivate':
+      return 9;
+    case 'createworksheet':
+      return 10;
+    default:
+      console.warn(`Unknown action type: ${actionType}, defaulting to position 10`);
+      return 10;
+  }
+};
+
+/**
+ * Updates paramArgs with upload data if available
+ * @param {Array} paramArgs - Parameter arguments array
+ * @param {object} uploadResultData - Upload result data
+ * @param {string} actionType - The type of action (deactivate, activate, replace, reactivate, createWorksheet)
+ * @returns {Array} - Updated paramArgs array
+ */
+const updateParamArgsWithUploadData = (paramArgs, uploadResultData, actionType) => {
+  const uploadData = uploadResultData?.result?.data;
+  
+  if (uploadData !== undefined) {
+    const uploadReplacePosition = getUploadReplacePosition(actionType);
+    if (paramArgs.length > uploadReplacePosition) {
+      paramArgs[uploadReplacePosition] = uploadData;
+      console.log(`Upload data added at position ${uploadReplacePosition} for action type ${actionType}`);
+    } else {
+      console.warn(
+        `Warning: paramArgs array is shorter than expected (${paramArgs.length} <= ${uploadReplacePosition}). Upload data not added for ${actionType}.`
+      );
+    }
+  } else {
+    console.warn("Warning: No upload data found in uploadResponse.result.data");
+  }
+  
+  return paramArgs;
+};
+
 module.exports = {
   fetchDataFromNavisionThrowServiceNow,
   callServiceNowAPI,
   downloadAttachmentAsBase64,
   convertPdfToWord,
-  getRecordAttachmentsAndConvert
+  getRecordAttachmentsAndConvert,
+  handleDocumentUpload,
+  updateParamArgsWithUploadData,
+  uploadDocument
 };

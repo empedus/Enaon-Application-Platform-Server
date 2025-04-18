@@ -11,4 +11,3 @@ router.post("/upload_attachment", authorizeMeterApp, uploadController.uploadAtta
 router.post("/merge_attachments", authorizeMeterApp, uploadController.mergeAttachments);
 
 module.exports = router
-

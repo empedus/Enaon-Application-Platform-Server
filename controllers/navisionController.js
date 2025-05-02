@@ -675,6 +675,43 @@ const getDisconnectionPhotos = async (req, res) => {
 };
 
 
+/**
+ * Function to get connection pressure based on user email
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ */
+const getMeterTypes = async (req, res) => {
+  try {
+    // Extract user_email from the query params
+    const { user_email } = req.query;
+    if (!user_email) {
+      return res.status(400).json({ error: "Missing user_email parameter" });
+    }
+    console.log("User email:", user_email);
+
+    // Send user_email as query parameter to the service
+    const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
+      ENDPOINTS.GET_METER_TYPES,
+      {}, // No request body
+      "post", // Explicitly provide method
+      false, // No need for request body
+      { user_email } // Include user_email in query parameters
+    );
+
+    if (serviceNowResponse.error) {
+      return res
+        .status(serviceNowResponse.status || 500)
+        .json({ error: serviceNowResponse.error });
+    }
+
+    res.json(serviceNowResponse);
+  } catch (error) {
+    console.error("Error in /getMeterTypes:", error.message);
+    res.status(500).json({ error: "Failed to fetch Meter Type data" });
+  }
+};
+
+
 
 
 const { handleDocumentUpload, updateParamArgsWithUploadData } = require("../services/navisionFetchService");
@@ -1916,4 +1953,5 @@ module.exports = {
   replaceMeter,
   createWorksheet,
   getWorkperson,
+  getMeterTypes
 };

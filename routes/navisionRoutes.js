@@ -64,6 +64,12 @@ router.post("/GetDisconectionMethods",authorizeMeterApp, navisionController.getD
  */
 router.get("/GetDisconectionPhotos",authorizeMeterApp, navisionController.getDisconnectionPhotos)
 
+/**
+ * Route for getting Meter Types
+ * POST /api/navision/GetMeterTypes
+ */
+router.post("/GetMeterTypes",authorizeMeterApp, navisionController.getMeterTypes)
+
 
 /**
  * Route for Uploading Word Documents

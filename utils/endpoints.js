@@ -33,6 +33,7 @@ module.exports = {
   REPLACE_METER: "/api/x_eedat_meters_app/navision/ReplaceMeter",
   CREATE_WORKSHEET: "/api/x_eedat_meters_app/navision/CreateWorksheet",
   GET_WORKPERSON: "/api/x_eedat_meters_app/navision/GetWorkperson",
-  GET_METER_TYPES: "/api/x_eedat_meters_app/navision/GetMeterTypes"
+  GET_METER_TYPES: "/api/x_eedat_meters_app/navision/GetMeterTypes",
+  UPLOAD_METER_DISCONNECTION_PHOTO: "/api/x_eedat_meters_app/navision/UploadMeterDisconnectionPhoto"
 }
 

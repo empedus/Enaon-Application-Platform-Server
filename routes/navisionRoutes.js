@@ -120,5 +120,12 @@ router.post("/GetWorkperson",authorizeMeterApp, navisionController.getWorkperson
 router.post("/CreateWorksheet",authorizeMeterApp, navisionController.createWorksheet)
 
 
+/**
+ * Route for UploadMeterDisconnectionPhoto
+ * POST /api/navision/UploadMeterDisconnectionPhoto
+ */
+router.post("/UploadMeterDisconnectionPhoto", navisionController.uploadMeterDisconnectionPhoto)
+
+
 
 module.exports = router

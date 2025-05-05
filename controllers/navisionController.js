@@ -675,6 +675,57 @@ const getDisconnectionPhotos = async (req, res) => {
 };
 
 
+
+
+/**
+ * Function to upload meter disconnection photo
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ */
+const uploadMeterDisconnectionPhoto = async (req, res) => {
+  try {
+    // Extract user_email from the query params
+    const { user_email } = req.query;
+    if (!user_email) {
+      return res.status(400).json({ error: "Missing user_email parameter" });
+    }
+    console.log("User email:", user_email);
+
+    // Get the request body
+    const requestBody = req.body;
+    console.log("Request body:", JSON.stringify(requestBody));
+
+    // Check if request body exists
+    if (!requestBody || Object.keys(requestBody).length === 0) {
+      return res.status(400).json({ error: "Request body is required" });
+    }
+
+    // Send both user_email and request body to the service
+    const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
+      ENDPOINTS.UPLOAD_METER_DISCONNECTION_PHOTO,
+      requestBody, // Include the request body
+      "post", // Explicitly provide method
+      false, // Set to true since we're sending a request body
+      { user_email } // Include user_email in query parameters
+    );
+
+    if (serviceNowResponse.error) {
+      return res
+        .status(serviceNowResponse.status || 500)
+        .json({ error: serviceNowResponse.error });
+    }
+
+    res.json(serviceNowResponse);
+  } catch (error) {
+    console.error("Error in /uploadMeterDisconnectionPhoto:", error.message);
+    res.status(500).json({ error: "Failed to Upload Disconnection Photo" });
+  }
+};
+
+
+
+
+
 /**
  * Function to get connection pressure based on user email
  * @param {object} req - Express request object
@@ -1953,5 +2004,6 @@ module.exports = {
   replaceMeter,
   createWorksheet,
   getWorkperson,
-  getMeterTypes
+  getMeterTypes,
+  uploadMeterDisconnectionPhoto
 };

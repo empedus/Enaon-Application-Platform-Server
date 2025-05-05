@@ -124,7 +124,7 @@ router.post("/CreateWorksheet",authorizeMeterApp, navisionController.createWorks
  * Route for UploadMeterDisconnectionPhoto
  * POST /api/navision/UploadMeterDisconnectionPhoto
  */
-router.post("/UploadMeterDisconnectionPhoto", navisionController.uploadMeterDisconnectionPhoto)
+router.post("/UploadMeterDisconnectionPhoto", authorizeMeterApp, navisionController.uploadMeterDisconnectionPhoto)
 
 
 

@@ -10,6 +10,6 @@ const { authorizeMeterApp } = require("../middleware/auth")
  */
 router.post("/upload_attachment", authorizeMeterApp, uploadController.uploadAttachments);
 router.post("/merge_attachments", authorizeMeterApp, uploadController.mergeAttachments);
-router.delete("/delete_attachment", uploadController.deleteAttachment);
+router.delete("/delete_attachment", authorizeMeterApp, uploadController.deleteAttachment);
 
 module.exports = router

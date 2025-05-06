@@ -1,6 +1,7 @@
 const axios = require("axios")
 const { auth } = require("../config/serviceNow")
 const ENDPOINTS = require("../utils/endpoints")
+const { fieldMapping } = require('../utils/fieldMappingMeterApp');
 
 const getDataFromServiceNow = async (path, params) => {
   try {
@@ -86,19 +87,49 @@ const deleteDataFromServiceNow = async (path, params) => {
   }
 }
 
-// Function to find matching values in the assignment response
+// // Function to find matching values in the assignment response
+// function findMatchingValue(fieldName, jobDetails) {
+//   for (const key in jobDetails.result.job_assignments[0]) {
+//     if (fieldName.toLowerCase().includes(key.toLowerCase())) {
+//       return (
+//         jobDetails.result.job_assignments[0][key]?.displayValue ||
+//         jobDetails.result.job_assignments[0][key]?.value ||
+//         ""
+//       )
+//     }
+//   }
+//   return null // Return null if no matching value is found
+// }
+
+// Updated findMatchingValue function
 function findMatchingValue(fieldName, jobDetails) {
-  for (const key in jobDetails.result.job_assignments[0]) {
-    if (fieldName.toLowerCase().includes(key.toLowerCase())) {
-      return (
-        jobDetails.result.job_assignments[0][key]?.displayValue ||
-        jobDetails.result.job_assignments[0][key]?.value ||
-        ""
-      )
+  // Check if we have a mapping for this field
+  if (fieldName in fieldMapping) {
+    const jobKey = fieldMapping[fieldName];
+    
+    // If the mapping is null, return null (no matching field)
+    if (jobKey === null) {
+      return null;
     }
+    
+    // Get the field data from job details
+    const fieldData = jobDetails.result.job_assignments[0][jobKey];
+    
+    // Return the display value or value if available
+    if (fieldData) {
+      return fieldData.displayValue || fieldData.value || "";
+    }
+    
+    // If the field doesn't exist in job details, return null
+    return null;
   }
-  return null // Return null if no matching value is found
+  
+  // If the field isn't in our mapping, return null
+  return null;
 }
+
+
+
 
 module.exports = {
   getDataFromServiceNow,

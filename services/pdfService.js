@@ -170,7 +170,7 @@
 const fs = require("fs")
 const path = require("path")
 const { v4: uuidv4 } = require("uuid")
-const { PDFDocument } = require("pdf-lib")
+const { PDFDocument, rgb } = require('pdf-lib');
 const fontkit = require("@pdf-lib/fontkit")
 const axios = require("axios")
 const { findMatchingValue } = require("./serviceNowService")
@@ -209,37 +209,281 @@ async function loadPdfWithFont(pdfBuffer) {
   return { pdfDoc, customFont }
 }
 
+// async function fillPdfForm(pdfDoc, customFont, jobDetails) {
+//   const form = pdfDoc.getForm()
+//   const fields = form.getFields()
+
+//   // Fill in fields with values
+//   for (const field of fields) {
+//     const fieldName = field.getName()
+//     const matchingValue = findMatchingValue(fieldName, jobDetails)
+
+//     if (matchingValue) {
+//       try {
+//         console.log(`Setting field ${fieldName} to ${matchingValue}`)
+//         // if (field.constructor.name === "PDFTextField") {
+//           field.setText(matchingValue)
+//           field.setFontSize(10.5)
+//           field.updateAppearances(customFont)
+//         // } else if (field.constructor.name === "PDFCheckBox") {
+//         //   if (matchingValue === "checked") field.check()
+//         // } else if (field.constructor.name === "PDFRadioButton") {
+//         //   field.select(matchingValue)
+//         // } else if (field.constructor.name === "PDFDropdown") {
+//         //   field.select(matchingValue)
+//         // }
+//       } catch (err) {
+//         console.warn(`Failed to fill field ${fieldName}:`, err.message)
+//       }
+//     }
+//   }
+
+//   return pdfDoc
+// }
+
+
+
+const { fieldMapping } = require('../utils/fieldMappingMeterApp');
+
+
 async function fillPdfForm(pdfDoc, customFont, jobDetails) {
-  const form = pdfDoc.getForm()
-  const fields = form.getFields()
-
-  // Fill in fields with values
-  for (const field of fields) {
-    const fieldName = field.getName()
-    const matchingValue = findMatchingValue(fieldName, jobDetails)
-
-    if (matchingValue) {
+  const form = pdfDoc.getForm();
+  const fields = form.getFields();
+  
+  // Embed Noto Sans font for Greek support
+  let greekFont;
+  try {
+    // Try multiple possible locations for the font using relative paths
+    const possibleFontPaths = [
+      path.join(__dirname, '..', 'fonts', 'NotoSans-Regular.ttf'),
+      path.join(__dirname, '..', '..', 'fonts', 'NotoSans-Regular.ttf'),
+      path.join(process.cwd(), 'fonts', 'NotoSans-Regular.ttf')
+    ];
+    
+    let fontBytes = null;
+    let usedPath = null;
+    
+    // Try each path until we find the font
+    for (const fontPath of possibleFontPaths) {
       try {
-        console.log(`Setting field ${fieldName} to ${matchingValue}`)
-        if (field.constructor.name === "PDFTextField") {
-          field.setText(matchingValue)
-          field.setFontSize(10.5)
-          field.updateAppearances(customFont)
-        } else if (field.constructor.name === "PDFCheckBox") {
-          if (matchingValue === "checked") field.check()
-        } else if (field.constructor.name === "PDFRadioButton") {
-          field.select(matchingValue)
-        } else if (field.constructor.name === "PDFDropdown") {
-          field.select(matchingValue)
+        if (fs.existsSync(fontPath)) {
+          fontBytes = fs.readFileSync(fontPath);
+          usedPath = fontPath;
+          break;
         }
       } catch (err) {
-        console.warn(`Failed to fill field ${fieldName}:`, err.message)
+        // Continue to the next path
       }
+    }
+    
+    if (!fontBytes) {
+      throw new Error('Could not find NotoSans-Regular.ttf in any of the expected locations');
+    }
+    
+    greekFont = await pdfDoc.embedFont(fontBytes);
+    console.log(`Embedded Noto Sans font with Greek support from ${usedPath}`);
+  } catch (fontErr) {
+    console.warn("Could not embed Noto Sans font:", fontErr.message);
+    
+    // Try the Helvetica font as fallback
+    try {
+      const possibleHelveticaPaths = [
+        path.join(__dirname, '..', 'fonts', 'Helvetica.ttf'),
+        path.join(__dirname, '..', '..', 'fonts', 'Helvetica.ttf'),
+        path.join(process.cwd(), 'fonts', 'Helvetica.ttf')
+      ];
+      
+      let fontBytes = null;
+      let usedPath = null;
+      
+      // Try each path until we find the font
+      for (const fontPath of possibleHelveticaPaths) {
+        try {
+          if (fs.existsSync(fontPath)) {
+            fontBytes = fs.readFileSync(fontPath);
+            usedPath = fontPath;
+            break;
+          }
+        } catch (err) {
+          // Continue to the next path
+        }
+      }
+      
+      if (!fontBytes) {
+        throw new Error('Could not find Helvetica.ttf in any of the expected locations');
+      }
+      
+      greekFont = await pdfDoc.embedFont(fontBytes);
+      console.log(`Embedded Helvetica font as fallback from ${usedPath}`);
+    } catch (fallbackErr) {
+      console.warn("Could not embed Helvetica font:", fallbackErr.message);
+      greekFont = customFont; // Use the provided font as last resort
     }
   }
 
-  return pdfDoc
+  // Get current date and time
+  const now = new Date();
+  
+  // Format date as DD/MM/YYYY
+  const currentDate = now.toLocaleDateString('en-GB', { 
+    day: '2-digit', 
+    month: '2-digit', 
+    year: 'numeric' 
+  });
+  
+  // Format time as HH:MM in 24-hour format
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const currentTime = `${hours}:${minutes}`;
+  
+  console.log(`Current date: ${currentDate}, Current time: ${currentTime}`);
+
+  // Fill in fields with values
+  for (const field of fields) {
+    const fieldName = field.getName();
+    
+    // Special handling for date and time fields
+    if (fieldName === 'u_date') {
+      try {
+        console.log(`Setting date field ${fieldName} to ${currentDate}`);
+        field.setText(currentDate);
+        
+        // Set font size for date field
+        if (field.dict) {
+          const daString = `/Helv 12 Tf 0 g`;
+          field.dict.set(PDFName.of('DA'), PDFString.of(daString));
+        }
+        
+        continue; // Skip the rest of the loop for this field
+      } catch (err) {
+        console.warn(`Failed to set date field ${fieldName}:`, err.message);
+      }
+    }
+    
+    if (fieldName === 'u_time') {
+      try {
+        console.log(`Setting time field ${fieldName} to ${currentTime}`);
+        field.setText(currentTime);
+        
+        // Set font size for time field
+        if (field.dict) {
+          const daString = `/Helv 12 Tf 0 g`;
+          field.dict.set(PDFName.of('DA'), PDFString.of(daString));
+        }
+        
+        continue; // Skip the rest of the loop for this field
+      } catch (err) {
+        console.warn(`Failed to set time field ${fieldName}:`, err.message);
+      }
+    }
+    
+    // Use the field mapping to get the job details key
+    const jobKey = fieldMapping[fieldName];
+    
+    // Skip fields that don't have a mapping
+    if (!jobKey) continue;
+    
+    // Get the value from job details
+    const fieldData = jobDetails.result.job_assignments[0][jobKey];
+    console.log("PEDIA " + JSON.stringify(fieldData))
+    let matchingValue = fieldData?.displayValue || fieldData?.value || "";
+    
+    
+    // Skip empty fields
+    if (!matchingValue || matchingValue === "") {
+      console.log(`Skipping empty field ${fieldName}`);
+      continue;
+    }
+    
+    // Convert to string if not already
+    matchingValue = String(matchingValue);
+    
+    try {
+      console.log(`Setting field ${fieldName} to ${matchingValue}`);
+      
+      // Use static font size of 12 for all fields
+      const fontSize = 12;
+      
+      // Check if the value contains Greek characters
+      const hasGreekChars = /[\u0370-\u03FF]/.test(matchingValue);
+      
+      if (hasGreekChars) {
+        console.log(`Field ${fieldName} contains Greek characters, using Noto Sans font`);
+        
+        // For fields with Greek text, use a special approach
+        try {
+          // Don't use setText directly for Greek text to avoid WinAnsi encoding issues
+          // Instead, set the value directly in the dictionary with UTF-16BE encoding
+          if (field.dict) {
+            // Set the font name with static font size
+            const fontName = `/F${greekFont.name || 'NotoSans'}`;
+            const daString = `${fontName} ${fontSize} Tf 0 g`;
+            field.dict.set(PDFName.of('DA'), PDFString.of(daString));
+            
+            // Set the value with Unicode encoding
+            field.dict.set(PDFName.of('V'), PDFString.of(matchingValue, { encoding: 'UTF-16BE' }));
+            
+            // Make sure the field is set to use Unicode
+            field.dict.set(PDFName.of('Q'), PDFNumber.of(0)); // Left alignment
+          } else {
+            console.warn(`Field ${fieldName} does not have a dict property, using fallback method`);
+            field.setText(matchingValue);
+            field.updateAppearances(greekFont);
+          }
+        } catch (greekErr) {
+          console.warn(`Failed to set Greek text for ${fieldName}: ${greekErr.message}`);
+          
+          // If all else fails, try with Latin replacement as last resort
+          try {
+            const latinValue = replaceGreekWithLatin(matchingValue);
+            field.setText(latinValue);
+            console.log(`Used Latin fallback for ${fieldName}: ${latinValue}`);
+          } catch (latinErr) {
+            console.error(`All attempts failed for ${fieldName}`);
+          }
+        }
+      } else {
+        // For non-Greek text, use the standard approach
+        field.setText(matchingValue);
+        
+        // Try to set font size for non-Greek text too
+        try {
+          if (field.dict) {
+            // Set font size directly
+            const daString = `/Helv ${fontSize} Tf 0 g`;
+            field.dict.set(PDFName.of('DA'), PDFString.of(daString));
+          }
+        } catch (err) {
+          console.warn(`Could not set font size for non-Greek text: ${err.message}`);
+        }
+      }
+    } catch (err) {
+      console.warn(`Failed to process field ${fieldName}:`, err.message);
+    }
+  }
+
+  return pdfDoc;
 }
+
+// Helper function to replace Greek with Latin as last resort
+function replaceGreekWithLatin(text) {
+  if (!text) return "";
+  
+  const greekToLatinMap = {
+    'Α': 'A', 'Β': 'B', 'Γ': 'G', 'Δ': 'D', 'Ε': 'E', 'Ζ': 'Z', 'Η': 'H', 
+    'Θ': 'TH', 'Ι': 'I', 'Κ': 'K', 'Λ': 'L', 'Μ': 'M', 'Ν': 'N', 'Ξ': 'X', 
+    'Ο': 'O', 'Π': 'P', 'Ρ': 'R', 'Σ': 'S', 'Τ': 'T', 'Υ': 'Y', 'Φ': 'F', 
+    'Χ': 'CH', 'Ψ': 'PS', 'Ω': 'O',
+    'α': 'a', 'β': 'b', 'γ': 'g', 'δ': 'd', 'ε': 'e', 'ζ': 'z', 'η': 'i', 
+    'θ': 'th', 'ι': 'i', 'κ': 'k', 'λ': 'l', 'μ': 'm', 'ν': 'n', 'ξ': 'x', 
+    'ο': 'o', 'π': 'p', 'ρ': 'r', 'σ': 's', 'τ': 't', 'υ': 'y', 'φ': 'f', 
+    'χ': 'ch', 'ψ': 'ps', 'ω': 'o', 'ς': 's'
+  };
+  
+  return String(text).replace(/[Α-Ωα-ως]/g, match => greekToLatinMap[match] || match);
+}
+
+
 
 async function attachPdfToServiceNow(pdfBuffer, record_sys_id, fileName) {
   // Use ServiceNow Attachment API to upload the file
@@ -286,7 +530,7 @@ async function processSignatures(pdfDoc, signatureTechnician, signatureCustomer)
     // Embed Technician Signature in PDF
     const pngImageTechnician = await pdfDoc.embedPng(imageBufferTechnician)
     console.log("Technician PNG image embedded successfully.")
-    const pngDimsTechnician = pngImageTechnician.scale(0.1) // Scale down technician signature image to 10%
+    const pngDimsTechnician = pngImageTechnician.scale(0.6) // Scale down technician signature image to 10%
     const page = pdfDoc.getPages()[0] || pdfDoc.addPage()
     page.drawImage(pngImageTechnician, {
       x: 115, // Technician signature position X
@@ -311,7 +555,7 @@ async function processSignatures(pdfDoc, signatureTechnician, signatureCustomer)
     // Embed Customer Signature in PDF
     const pngImageCustomer = await pdfDoc.embedPng(imageBufferCustomer)
     console.log("Customer PNG image embedded successfully.")
-    const pngDimsCustomer = pngImageCustomer.scale(0.1) // Scale down customer signature image to 10%
+    const pngDimsCustomer = pngImageCustomer.scale(0.6) // Scale down customer signature image to 10%
     const page = pdfDoc.getPages()[0] || pdfDoc.addPage()
     page.drawImage(pngImageCustomer, {
       x: 500, // Customer signature position X
@@ -327,6 +571,7 @@ async function processSignatures(pdfDoc, signatureTechnician, signatureCustomer)
 
   return pdfDoc
 }
+
 
 // New utility functions to extract from controller
 

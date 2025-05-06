@@ -409,8 +409,9 @@ const convertPdfToWord = async (pdfBase64) => {
         convert: {
           operation: 'convert',
           input: 'import_pdf',
-          input_format: 'pdf',
-          output_format: 'docx'
+          input_format: 'www',
+          output_format: 'docx',
+          engine: 'libreoffice'
         },
         export_docx: {
           operation: 'export/url',

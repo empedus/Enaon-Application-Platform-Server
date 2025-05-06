@@ -13,7 +13,7 @@ module.exports = {
   GET_ATTACHED_PDF: "/api/x_eedat_meters_app/meter_app/get_attached_pdf",
   RETRIEVE_RECORD_ATTACHMENTS: "/api/now/attachment",
   UPDATE_USERNAME_PASS: "/api/x_eedat_meters_app/user_auth/update_username_pass",
-
+  DELETE_ATTACHMENT: "/api/now/attachment",
 
   // Navision API endpoints
   BARCODE_SCAN: "/api/x_eedat_meters_app/navision/BarcodeScan",

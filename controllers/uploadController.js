@@ -1,10 +1,11 @@
-const axios = require("axios")
+const axios = require("axios");
 const multer = require("multer");
 const { v4: uuidv4 } = require("uuid");
 const uploadService = require("../services/uploadAttachment");
+const { deleteDataFromServiceNow } = require("../services/serviceNowService");
 const sharp = require("sharp");
 const { PDFDocument } = require("pdf-lib");
-const ENDPOINTS = require("../utils/endpoints")
+const ENDPOINTS = require("../utils/endpoints");
 
 /**
  * Configure multer storage to use memory storage instead of disk storage.
@@ -18,12 +19,11 @@ const upload = multer({
 }).array("attachments", 25); // Limit the number of files to 25
 
 class UploadController {
-  
   // Upload attachments top Servicenow Record
-    
+
   async mergeAttachments(req, res) {
     console.log("[INFO] Upload process started...");
-  
+
     try {
       const { record_sys_id } = req.query;
       if (!record_sys_id) {
@@ -33,7 +33,7 @@ class UploadController {
           message: "Missing required parameters (record_sys_id)",
         });
       }
-  
+
       // Fetch attachments from ServiceNow
       const getAttachmentsResponse = await axios.get(
         `${ENDPOINTS.servicenowBaseURL}${ENDPOINTS.RETRIEVE_RECORD_ATTACHMENTS}`,
@@ -46,9 +46,9 @@ class UploadController {
           params: { sysparm_query: `table_sys_id=${record_sys_id}` },
         }
       );
-  
+
       const attachments = getAttachmentsResponse.data.result;
-  
+
       if (attachments.length === 0) {
         console.warn("[WARN] No attachments found for the provided record.");
         return res.status(404).json({
@@ -56,18 +56,18 @@ class UploadController {
           message: "No attachments found for the provided record.",
         });
       }
-  
+
       let mergedPdfDoc = await PDFDocument.create();
       const pageWidth = 595.276;
       const pageHeight = 841.89;
       console.log("[INFO] Processing files...");
-  
+
       // Process each attachment
       for (const attachment of attachments) {
         const attachmentUrl = `${attachment.download_link}`;
         const fileName = attachment.file_name;
         const fileExt = fileName.split(".").pop().toLowerCase();
-  
+
         const attachmentResponse = await axios.get(attachmentUrl, {
           responseType: "arraybuffer",
           auth: {
@@ -75,10 +75,10 @@ class UploadController {
             password: process.env.SERVICENOW_PASS,
           },
         });
-  
+
         const fileBuffer = Buffer.from(attachmentResponse.data);
         console.log(`[INFO] Processing file: ${fileName}`);
-  
+
         // Check if the file type is supported and process it
         if (["pdf", "jpg", "jpeg", "png"].includes(fileExt)) {
           if (fileExt === "pdf") {
@@ -91,18 +91,18 @@ class UploadController {
           } else {
             const imageBuffer = await sharp(fileBuffer).toBuffer();
             let pdfImage;
-  
+
             if (fileExt === "jpg" || fileExt === "jpeg") {
               pdfImage = await mergedPdfDoc.embedJpg(imageBuffer);
             } else if (fileExt === "png") {
               pdfImage = await mergedPdfDoc.embedPng(imageBuffer);
             }
-  
+
             const { width, height } = pdfImage.scale(1);
             const scale = Math.min(pageWidth / width, pageHeight / height);
             const scaledWidth = width * scale;
             const scaledHeight = height * scale;
-  
+
             const imagePage = mergedPdfDoc.addPage([pageWidth, pageHeight]);
             imagePage.drawImage(pdfImage, {
               x: (pageWidth - scaledWidth) / 2,
@@ -111,7 +111,7 @@ class UploadController {
               height: scaledHeight,
             });
           }
-  
+
           // Now delete the attachment after it has been successfully merged
           try {
             const deleteAttachmentResponse = await axios.delete(
@@ -126,7 +126,9 @@ class UploadController {
                 },
               }
             );
-            console.log(`[INFO] Deleted attachment with sys_id: ${attachment.sys_id}`);
+            console.log(
+              `[INFO] Deleted attachment with sys_id: ${attachment.sys_id}`
+            );
           } catch (deleteError) {
             console.error(
               `[ERROR] Failed to delete attachment with sys_id: ${attachment.sys_id}`,
@@ -135,7 +137,7 @@ class UploadController {
           }
         }
       }
-  
+
       const mergedPDFBuffer = await mergedPdfDoc.save();
       if (mergedPDFBuffer.length > 0) {
         console.log("[INFO] Uploading merged PDF...");
@@ -151,12 +153,11 @@ class UploadController {
           file: pdfResult,
         });
       }
-  
+
       return res.status(500).json({
         success: false,
         message: "Failed to merge and upload PDF.",
       });
-  
     } catch (error) {
       console.error("[ERROR] Upload error:", error);
       res.status(500).json({
@@ -168,80 +169,123 @@ class UploadController {
   }
 
   async uploadAttachments(req, res) {
-      console.log("[INFO] Upload process started...");
-      upload(req, res, async (err) => {
-        try {
-          if (err) {
-            console.error("[ERROR] Upload failed:", err);
-            return res.status(500).json({
-              success: false,
-              message: "File upload failed",
-              error: err.message,
-            });
-          }
-  
-          if (!req.files || req.files.length === 0) {
-            console.warn("[WARN] No files uploaded");
-            return res.status(400).json({
-              success: false,
-              message: "No files uploaded",
-            });
-          }
-  
-          const { user_email, record_sys_id } = req.query;
-  
-          if (!user_email || !record_sys_id) {
-            console.warn("[WARN] Missing required parameters");
-            return res.status(400).json({
-              success: false,
-              message: "Missing required parameters (user_email, record_sys_id)",
-            });
-          }
-  
-          const uploadResults = [];
-          console.log("[INFO] Processing files...");
-          // Process each file individually
-          for (const file of req.files) {
-            const fileBuffer = file.buffer;
-            const fileName = Buffer.from(file.originalname, 'latin1').toString('utf8');// No encoding here, use as is
-            const fileExt = fileName.split(".").pop().toLowerCase();
-  
-            console.log(`[INFO] Uploading file: ${fileName}`); // Check if the name is correct
-  
-            
-              const result = await uploadService.uploadToServiceNow(
-                fileBuffer,
-                fileName,
-                record_sys_id,
-                user_email
-              );
-              uploadResults.push(result);
-            
-          }
-  
-          console.log("[INFO] Cleaning up memory...");
-          req.files = null; // Remove file references
-  
-          console.log("[INFO] Upload completed.");
-          res.status(200).json({
-            success: true,
-            message: `Uploaded ${uploadResults.length} file(s).`,
-            files: uploadResults,
-          });
-        } catch (error) {
-          console.error("[ERROR] Upload error:", error);
-          res.status(500).json({
+    console.log("[INFO] Upload process started...");
+    upload(req, res, async (err) => {
+      try {
+        if (err) {
+          console.error("[ERROR] Upload failed:", err);
+          return res.status(500).json({
             success: false,
-            message: "Failed to process attachments",
-            error: error.message,
+            message: "File upload failed",
+            error: err.message,
           });
         }
-      });
-    }
 
+        if (!req.files || req.files.length === 0) {
+          console.warn("[WARN] No files uploaded");
+          return res.status(400).json({
+            success: false,
+            message: "No files uploaded",
+          });
+        }
+
+        const { user_email, record_sys_id } = req.query;
+
+        if (!user_email || !record_sys_id) {
+          console.warn("[WARN] Missing required parameters");
+          return res.status(400).json({
+            success: false,
+            message: "Missing required parameters (user_email, record_sys_id)",
+          });
+        }
+
+        const uploadResults = [];
+        console.log("[INFO] Processing files...");
+        // Process each file individually
+        for (const file of req.files) {
+          const fileBuffer = file.buffer;
+          const fileName = Buffer.from(file.originalname, "latin1").toString(
+            "utf8"
+          ); // No encoding here, use as is
+          const fileExt = fileName.split(".").pop().toLowerCase();
+
+          console.log(`[INFO] Uploading file: ${fileName}`); // Check if the name is correct
+
+          const result = await uploadService.uploadToServiceNow(
+            fileBuffer,
+            fileName,
+            record_sys_id,
+            user_email
+          );
+          uploadResults.push(result);
+        }
+
+        console.log("[INFO] Cleaning up memory...");
+        req.files = null; // Remove file references
+
+        console.log("[INFO] Upload completed.");
+        res.status(200).json({
+          success: true,
+          message: `Uploaded ${uploadResults.length} file(s).`,
+          files: uploadResults,
+        });
+      } catch (error) {
+        console.error("[ERROR] Upload error:", error);
+        res.status(500).json({
+          success: false,
+          message: "Failed to process attachments",
+          error: error.message,
+        });
+      }
+    });
   }
-  
 
+  // delete attachment
+  deleteAttachment = async (req, res) => {
+    try {
+      const { user_email, attachment_sys_id } = req.query;
 
+      if (!user_email || !attachment_sys_id) {
+        return res.status(400).json({
+          error:
+            "Missing required query parameters: user_email or attachment_sys_id",
+        });
+      }
+
+      // Construct the path with the attachment_sys_id
+      const path = `${ENDPOINTS.DELETE_ATTACHMENT}/${attachment_sys_id}`;
+
+      // Call getDataFromServiceNow with the correct path and params
+      const deleteAttachmentResponse = await deleteDataFromServiceNow(path, {
+        user_email, // Pass user_email as a parameter
+      });
+
+      // Check if there was an error in the response
+      if (deleteAttachmentResponse.error) {
+        return res.status(deleteAttachmentResponse.status || 500).json({
+          error: deleteAttachmentResponse.error,
+        });
+      }
+
+      res.status(200).json(deleteAttachmentResponse);
+    } catch (error) {
+      console.error("Error deleting attachment:", error);
+
+      if (error.response) {
+        return res.status(error.response.status).json({
+          error: error.response.data || "ServiceNow API error",
+        });
+      } else if (error.request) {
+        return res
+          .status(503)
+          .json({ error: "No response received from ServiceNow API" });
+      } else {
+        return res
+          .status(500)
+          .json({ error: error.message || "Internal server error" });
+      }
+    }
+  };
+}
 
 module.exports = new UploadController();

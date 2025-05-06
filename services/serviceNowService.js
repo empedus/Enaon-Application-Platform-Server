@@ -43,6 +43,49 @@ const getDataFromServiceNow = async (path, params) => {
   }
 }
 
+
+// New function for DELETE requests to ServiceNow
+const deleteDataFromServiceNow = async (path, params) => {
+  try {
+    const { servicenowBaseURL } = ENDPOINTS
+
+    if (!servicenowBaseURL || !path) {
+      console.error("Error: Missing base URL or path")
+      return { error: "Server misconfiguration: Missing URL or path" }
+    }
+
+    // Construct URL
+    const apiUrl = `${servicenowBaseURL}${path}`
+    console.log("Making DELETE request to:", apiUrl, "with params:", params)
+
+    // Make the DELETE request
+    const response = await axios.delete(apiUrl, {
+      auth: {
+        username: process.env.SERVICENOW_USER,
+        password: process.env.SERVICENOW_PASS,
+      },
+      headers: { "Content-Type": "application/json" },
+      params,
+    })
+
+    if (!response.data || Object.keys(response.data).length === 0) {
+      return { message: "Resource deleted successfully", status: 200 }
+    }
+
+    return response.data
+  } catch (error) {
+    console.error(`Error deleting data from ${path}:`, error.message)
+    if (error.response) {
+      console.error("Response data:", error.response.data)
+      console.error("Response status:", error.response.status)
+    }
+    return {
+      error: error.response?.data || "Failed to delete data from ServiceNow",
+      status: error.response?.status || 500,
+    }
+  }
+}
+
 // Function to find matching values in the assignment response
 function findMatchingValue(fieldName, jobDetails) {
   for (const key in jobDetails.result.job_assignments[0]) {
@@ -60,5 +103,6 @@ function findMatchingValue(fieldName, jobDetails) {
 module.exports = {
   getDataFromServiceNow,
   findMatchingValue,
+  deleteDataFromServiceNow
 }
 

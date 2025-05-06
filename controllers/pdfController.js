@@ -930,9 +930,13 @@ const signPdf = async (req, res) => {
   }
 };
 
+
+
+
+
 module.exports = {
   generatePdf,
   signPdf,
   getattachedpdf,
-  getRecordAttachments,
+  getRecordAttachments
 };

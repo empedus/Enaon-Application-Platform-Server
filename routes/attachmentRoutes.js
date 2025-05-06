@@ -1,6 +1,7 @@
 const express = require("express")
 const router = express.Router()
 const uploadController = require('../controllers/uploadController'); 
+
 const { authorizeMeterApp } = require("../middleware/auth")
 
 /**
@@ -9,5 +10,6 @@ const { authorizeMeterApp } = require("../middleware/auth")
  */
 router.post("/upload_attachment", authorizeMeterApp, uploadController.uploadAttachments);
 router.post("/merge_attachments", authorizeMeterApp, uploadController.mergeAttachments);
+router.delete("/delete_attachment", uploadController.deleteAttachment);
 
 module.exports = router

@@ -126,6 +126,9 @@ const getJobAssignmentState = async (req, res) => {
   }
 }
 
+
+
+
 module.exports = {
   getSpecificJobAssignment,
   getAllJobAssignments,

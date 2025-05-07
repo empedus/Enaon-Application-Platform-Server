@@ -530,7 +530,7 @@ async function processSignatures(pdfDoc, signatureTechnician, signatureCustomer)
     // Embed Technician Signature in PDF
     const pngImageTechnician = await pdfDoc.embedPng(imageBufferTechnician)
     console.log("Technician PNG image embedded successfully.")
-    const pngDimsTechnician = pngImageTechnician.scale(0.6) // Scale down technician signature image to 10%
+    const pngDimsTechnician = pngImageTechnician.scale(0.1) // Scale down technician signature image to 10%
     const page = pdfDoc.getPages()[0] || pdfDoc.addPage()
     page.drawImage(pngImageTechnician, {
       x: 115, // Technician signature position X
@@ -555,7 +555,7 @@ async function processSignatures(pdfDoc, signatureTechnician, signatureCustomer)
     // Embed Customer Signature in PDF
     const pngImageCustomer = await pdfDoc.embedPng(imageBufferCustomer)
     console.log("Customer PNG image embedded successfully.")
-    const pngDimsCustomer = pngImageCustomer.scale(0.6) // Scale down customer signature image to 10%
+    const pngDimsCustomer = pngImageCustomer.scale(0.1) // Scale down customer signature image to 10%
     const page = pdfDoc.getPages()[0] || pdfDoc.addPage()
     page.drawImage(pngImageCustomer, {
       x: 500, // Customer signature position X

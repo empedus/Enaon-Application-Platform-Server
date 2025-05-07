@@ -1396,7 +1396,7 @@ const deactivateMeter = async (req, res) => {
 
     // Step 1: Get attachments and convert PDF to Word
     const attachmentsResult = await getRecordAttachmentsAndConvert(recordSysId);
-
+    //console.log('Fetched Attachment ' + JSON.stringify(attachmentsResult))
     // If there was an error getting or converting attachments, continue with the deactivation
     // but include the error in the response
     let attachmentsError = null;

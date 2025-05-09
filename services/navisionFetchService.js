@@ -152,6 +152,7 @@ const fetchDataFromNavisionThrowServiceNow = async (
         "Content-Type": "application/json",
         "Accept": "application/json"
       },
+      timeout: 600000
     };
 
     // Log request details with simplified output

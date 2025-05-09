@@ -88,7 +88,7 @@
 //       username: process.env.SERVICENOW_USER,
 //       password: process.env.SERVICENOW_PASS,
 //     },
-//     timeout: 30000,
+//     timeout: 60000,
 //   })
 
 //   return attachmentResponse.data
@@ -502,7 +502,7 @@ async function attachPdfToServiceNow(pdfBuffer, record_sys_id, fileName) {
       username: process.env.SERVICENOW_USER,
       password: process.env.SERVICENOW_PASS,
     },
-    timeout: 30000,
+    timeout: 60000,
   })
 
   return attachmentResponse.data

@@ -24,6 +24,7 @@ const getDataFromServiceNow = async (path, params) => {
       },
       headers: { "Content-Type": "application/json" },
       params,
+      timeout: 60000
     })
 
     if (!response.data || Object.keys(response.data).length === 0) {

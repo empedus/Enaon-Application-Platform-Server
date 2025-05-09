@@ -121,7 +121,7 @@ class UploadService {
             username: servicenowUser,
             password: servicenowPass,
           },
-          timeout: 30000,  // 30 seconds timeout for the API request
+          timeout: 60000,  // 30 seconds timeout for the API request
         }
       );
 

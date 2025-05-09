@@ -667,7 +667,7 @@ const uploadDocument = async (req, res) => {
     const requestBody = {
       document: {
         FileName: document.FileName,
-        DocumentBase64Data: document.DocumentBase64Data,
+        DocumentBase64Data: document.DocumentBase64Data.base64,
       },
       meterFolder: meterFolder,
     };

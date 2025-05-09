@@ -590,10 +590,12 @@ const getRecordAttachmentsAndConvert = async (recordSysId) => {
 
     // Step 3: Convert PDF to Word for each attachment
     const convertedAttachments = [];
+
+    
     
     for (let att of attachmentsWithBase64) {
       // Only convert PDFs
-      if (att.content_type === 'application/pdf') {
+      if (att.content_type === 'application/pdf' || att.content_type === "multipart/form-data") {
         try {
           // Convert PDF to Word
           const wordBase64 = await convertPdfToWord(att.base64_data);
@@ -667,7 +669,7 @@ const uploadDocument = async (req, res) => {
     const requestBody = {
       document: {
         FileName: document.FileName,
-        DocumentBase64Data: document.DocumentBase64Data.base64,
+        DocumentBase64Data: document.DocumentBase64Data,
       },
       meterFolder: meterFolder,
     };
@@ -740,10 +742,12 @@ const handleDocumentUpload = async (userEmail, recordSysId, convertedAttachments
       const uploadDocumentRequestBody = {
         document: {
           FileName: filename,
-          DocumentBase64Data: convertedAttachments.base64_data,
+          DocumentBase64Data: convertedAttachments.base64_data.base64,
         },
         meterFolder: jobDispositionCode,
       };
+      
+
       
       // console.log(
       //   "uploadDocumentRequestBody " + JSON.stringify(uploadDocumentRequestBody)

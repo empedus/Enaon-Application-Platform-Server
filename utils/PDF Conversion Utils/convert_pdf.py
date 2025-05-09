@@ -22,7 +22,7 @@ from docx.shared import Inches
 from pdf2image import convert_from_path
  
 def pdf_to_docx_as_image(pdf_path, docx_path):
-    images = convert_from_path(pdf_path, dpi=300, poppler_path=r"C:\Users\User\Downloads\poppler-24.08.0\Library\bin")
+    images = convert_from_path(pdf_path, dpi=300, poppler_path=r"C:\Users\giann\Downloads\poppler-24.08.0\Library\bin")
     doc = Document()
  
     for i, img in enumerate(images):

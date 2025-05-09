@@ -3,8 +3,6 @@ const multer = require("multer");
 const { v4: uuidv4 } = require("uuid");
 const uploadService = require("../services/uploadAttachment");
 const { deleteDataFromServiceNow } = require("../services/serviceNowService");
-const sharp = require("sharp");
-const { PDFDocument } = require("pdf-lib");
 const ENDPOINTS = require("../utils/endpoints");
 
 /**
@@ -19,14 +17,14 @@ const upload = multer({
 }).array("attachments", 25); // Limit the number of files to 25
 
 class UploadController {
-  // Upload attachments top Servicenow Record
+  // Upload attachments to Servicenow Record
 
   async mergeAttachments(req, res) {
     console.log("[INFO] Upload process started...");
 
     try {
-      const { record_sys_id } = req.query;
-      if (!record_sys_id) {
+      const { record_sys_id, ikasp } = req.query;
+      if (!record_sys_id || !ikasp) {
         console.warn("[WARN] Missing required parameters");
         return res.status(400).json({
           success: false,
@@ -34,130 +32,10 @@ class UploadController {
         });
       }
 
-      // Fetch attachments from ServiceNow
-      const getAttachmentsResponse = await axios.get(
-        `${ENDPOINTS.servicenowBaseURL}${ENDPOINTS.RETRIEVE_RECORD_ATTACHMENTS}`,
-        {
-          auth: {
-            username: process.env.SERVICENOW_USER,
-            password: process.env.SERVICENOW_PASS,
-          },
-          headers: { "Content-Type": "application/json" },
-          params: { sysparm_query: `table_sys_id=${record_sys_id}` },
-        }
-      );
-
-      const attachments = getAttachmentsResponse.data.result;
-
-      if (attachments.length === 0) {
-        console.warn("[WARN] No attachments found for the provided record.");
-        return res.status(404).json({
-          success: false,
-          message: "No attachments found for the provided record.",
-        });
-      }
-
-      let mergedPdfDoc = await PDFDocument.create();
-      const pageWidth = 595.276;
-      const pageHeight = 841.89;
-      console.log("[INFO] Processing files...");
-
-      // Process each attachment
-      for (const attachment of attachments) {
-        const attachmentUrl = `${attachment.download_link}`;
-        const fileName = attachment.file_name;
-        const fileExt = fileName.split(".").pop().toLowerCase();
-
-        const attachmentResponse = await axios.get(attachmentUrl, {
-          responseType: "arraybuffer",
-          auth: {
-            username: process.env.SERVICENOW_USER,
-            password: process.env.SERVICENOW_PASS,
-          },
-        });
-
-        const fileBuffer = Buffer.from(attachmentResponse.data);
-        console.log(`[INFO] Processing file: ${fileName}`);
-
-        // Check if the file type is supported and process it
-        if (["pdf", "jpg", "jpeg", "png"].includes(fileExt)) {
-          if (fileExt === "pdf") {
-            const pdfToMerge = await PDFDocument.load(fileBuffer);
-            const copiedPages = await mergedPdfDoc.copyPages(
-              pdfToMerge,
-              pdfToMerge.getPageIndices()
-            );
-            copiedPages.forEach((page) => mergedPdfDoc.addPage(page));
-          } else {
-            const imageBuffer = await sharp(fileBuffer).toBuffer();
-            let pdfImage;
-
-            if (fileExt === "jpg" || fileExt === "jpeg") {
-              pdfImage = await mergedPdfDoc.embedJpg(imageBuffer);
-            } else if (fileExt === "png") {
-              pdfImage = await mergedPdfDoc.embedPng(imageBuffer);
-            }
-
-            const { width, height } = pdfImage.scale(1);
-            const scale = Math.min(pageWidth / width, pageHeight / height);
-            const scaledWidth = width * scale;
-            const scaledHeight = height * scale;
-
-            const imagePage = mergedPdfDoc.addPage([pageWidth, pageHeight]);
-            imagePage.drawImage(pdfImage, {
-              x: (pageWidth - scaledWidth) / 2,
-              y: (pageHeight - scaledHeight) / 2,
-              width: scaledWidth,
-              height: scaledHeight,
-            });
-          }
-
-          // Now delete the attachment after it has been successfully merged
-          try {
-            const deleteAttachmentResponse = await axios.delete(
-              `${ENDPOINTS.servicenowBaseURL}/api/now/attachment/${attachment.sys_id}`,
-              {
-                auth: {
-                  username: process.env.SERVICENOW_USER,
-                  password: process.env.SERVICENOW_PASS,
-                },
-                headers: {
-                  "Content-Type": "application/json",
-                },
-              }
-            );
-            console.log(
-              `[INFO] Deleted attachment with sys_id: ${attachment.sys_id}`
-            );
-          } catch (deleteError) {
-            console.error(
-              `[ERROR] Failed to delete attachment with sys_id: ${attachment.sys_id}`,
-              deleteError.message
-            );
-          }
-        }
-      }
-
-      const mergedPDFBuffer = await mergedPdfDoc.save();
-      if (mergedPDFBuffer.length > 0) {
-        console.log("[INFO] Uploading merged PDF...");
-        const pdfResult = await uploadService.uploadToServiceNow(
-          mergedPDFBuffer,
-          "merged_attachments.pdf",
-          record_sys_id
-        );
-        console.log("[INFO] Merged PDF uploaded.");
-        return res.status(200).json({
-          success: true,
-          message: "Uploaded merged PDF and deleted merged attachments.",
-          file: pdfResult,
-        });
-      }
-
-      return res.status(500).json({
-        success: false,
-        message: "Failed to merge and upload PDF.",
-      });
+      // Call the service method to handle the merging
+      const result = await uploadService.mergeAttachments(record_sys_id, ikasp);
+      
+      return res.status(200).json(result);
     } catch (error) {
       console.error("[ERROR] Upload error:", error);
       res.status(500).json({

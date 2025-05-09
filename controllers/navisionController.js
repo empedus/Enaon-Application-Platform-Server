@@ -766,626 +766,17 @@ const getMeterTypes = async (req, res) => {
 
 
 const { handleDocumentUpload, updateParamArgsWithUploadData } = require("../services/navisionFetchService");
-// const deactivateMeter = async (req, res) => {
-//   try {
-//     // Get user_email and record_Sys_id from query parameters
-//     const userEmail = req.query.user_email;
-//     const recordSysId = req.query.record_sys_id;
+const uploadService = require("../services/uploadAttachment");
 
-//     // Validate query parameters
-//     if (!userEmail || !recordSysId) {
-//       return res.status(400).json({
-//         error:
-//           "Missing required query parameters: user_email and record_sys_id are required",
-//       });
-//     }
 
-//     // Step 1: Get attachments and convert PDF to Word
-//     const attachmentsResult = await getRecordAttachmentsAndConvert(recordSysId);
-
-//     // If there was an error getting or converting attachments, continue with the deactivation
-//     // but include the error in the response
-//     let attachmentsError = null;
-//     let convertedAttachments = null;
-//     let originalAttachments = null;
-//     var filename = "";
-//     var jobDispositionCode = "";
-
-//     if (!attachmentsResult.success) {
-//       attachmentsError = attachmentsResult.error;
-//       console.warn(`Warning: ${attachmentsError}`);
-//       // We'll continue with the deactivation process even if attachment conversion fails
-//     } else {
-//       convertedAttachments = attachmentsResult.data.convertedAttachments[0];
-//       originalAttachments = attachmentsResult.data.originalAttachments[0];
-//       filename = convertedAttachments.word_file_name;
-//     }
-
-//     var user_email = userEmail;
-//     var record_sys_id = recordSysId;
-//     const serviceNowRes = await getDataFromServiceNow(
-//       ENDPOINTS.GET_SPECIFIC_ASSIGNMENT_PATH,
-//       {
-//         user_email,
-//         record_sys_id,
-//       }
-//     );
-
-//     if (serviceNowRes.error) {
-//       return res
-//         .status(serviceNowRes.status || 500)
-//         .json({ error: serviceNowRes.error });
-//     } else {
-//       jobDispositionCode =
-//         serviceNowRes.result.job_assignments[0].u_work_code.value;
-//     }
-
-//     console.log("Job Disposition Code " + jobDispositionCode);
-//     console.log("Filename " + filename);
-//     const uploadDocumentRequestBody = {
-//       document: {
-//         FileName: filename,
-//         DocumentBase64Data: convertedAttachments.base64_data,
-//       },
-//       meterFolder: jobDispositionCode,
-//     };
-//     console.log(
-//       "uploadDocumentRequestBody " + JSON.stringify(uploadDocumentRequestBody)
-//     );
-
-//     const uploadResponse = await uploadDocument(
-//       { body: JSON.stringify(uploadDocumentRequestBody) }, // mock req
-//       {
-//         status: function (code) {
-//           this.statusCode = code;
-//           return this;
-//         },
-//         json: function (data) {
-//           uploadResultData = data;
-//           console.log("Upload Response:", JSON.stringify(data, null, 2));
-//         },
-//       }
-//     );
-
-//     // Step 2: Get the request body for deactivating the meter
-//     // Clone the paramArgs array to avoid modifying the original request
-//     const paramArgs = req.body.paramArgs ? [...req.body.paramArgs] : [];
-
-//     // Validate that paramArgs exists and is an array
-//     if (!paramArgs || !Array.isArray(paramArgs)) {
-//       return res
-//         .status(400)
-//         .json({ error: "paramArgs is required and must be an array" });
-//     }
-
-//     // Insert uploadResponse.result.data at index 10 (11th position)
-//     const uploadData = uploadResultData?.result?.data;
-
-//     if (uploadData !== undefined) {
-//       const uploadReplacePosition = 10;
-//       if (paramArgs.length > uploadReplacePosition) {
-//         paramArgs[uploadReplacePosition] = uploadData;
-//       } else {
-//         console.warn(
-//           `Warning: paramArgs array is shorter than expected (${paramArgs.length} <= ${uploadReplacePosition}). Upload data not added.`
-//         );
-//       }
-//     } else {
-//       console.warn("Warning: No upload data found in uploadResponse.result.data");
-//     }
-//     // Generate a UUID
-//     const WSTrnId = uuidv4();
-//     console.log("Generated UUID:", WSTrnId);
-
-//     // Add the UUID after the 16th element (index 15)
-//     // The position is fixed at index 16 (after the 16th element)
-//     const insertPosition = 16;
-
-//     // Insert the UUID at the specified position
-//     // If the array is shorter than the position, the UUID will be added at the end
-//     if (paramArgs.length >= insertPosition) {
-//       paramArgs.splice(insertPosition, 0, WSTrnId);
-//     } else {
-//       // If the array is shorter than expected, append the UUID
-//       paramArgs.push(WSTrnId);
-//       console.warn(
-//         `Warning: paramArgs array is shorter than expected (${paramArgs.length} < ${insertPosition}). UUID added at the end.`
-//       );
-//     }
-
-//     const requestBody = {
-//       codeUnitName: "Integration",
-//       functionName: "DeactivateMeter",
-//       paramArgs: paramArgs,
-//     };
-
-//     // Print the request body to console for debugging
-//     console.log(
-//       "Request body for ServiceNow API:",
-//       JSON.stringify(requestBody, null, 2)
-//     );
-
-//     // Step 3: Call ServiceNow API to deactivate the meter with query parameters
-//     const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
-//       ENDPOINTS.DEACTIVATE_METER,
-//       requestBody,
-//       "post",
-//       false,
-//       { user_email: userEmail, record_sys_id: recordSysId }
-//     );
-
-//     // If ServiceNow returns an error, return it as a response
-//     if (serviceNowResponse.error) {
-//       return res.status(serviceNowResponse.status || 500).json({
-//         error: serviceNowResponse.error,
-//         attachmentsError: attachmentsError,
-//         convertedAttachments: convertedAttachments,
-//       });
-//     }
-
-//     // Step 4: Return the response from ServiceNow along with the converted attachments
-//     res.json({
-//       ...serviceNowResponse,
-//       attachmentsError: attachmentsError,
-//       convertedAttachments: convertedAttachments,
-//       originalAttachments: originalAttachments,
-//     });
-//   } catch (error) {
-//     console.error("Error in /DeactivateMeter:", error.message);
-//     res.status(500).json({ error: "Failed to deactivate meter" });
-//   }
-// };
-
-// /**
-//  * Function to deactivate a meter
-//  * @param {object} req - Express request object
-//  * @param {object} res - Express response object
-//  */
-// const activateMeter = async (req, res) => {
-//   try {
-//     // Get user_email and record_Sys_id from query parameters
-//     const userEmail = req.query.user_email;
-//     const recordSysId = req.query.record_sys_id;
-
-//     // Validate query parameters
-//     if (!userEmail || !recordSysId) {
-//       return res.status(400).json({
-//         error:
-//           "Missing required query parameters: user_email and record_sys_id are required",
-//       });
-//     }
-
-//     // Step 1: Get attachments and convert PDF to Word
-//     const attachmentsResult = await getRecordAttachmentsAndConvert(recordSysId);
-
-//     // If there was an error getting or converting attachments, continue with the deactivation
-//     // but include the error in the response
-//     let attachmentsError = null;
-//     let convertedAttachments = null;
-//     let originalAttachments = null;
-
-//     if (!attachmentsResult.success) {
-//       attachmentsError = attachmentsResult.error;
-//       console.warn(`Warning: ${attachmentsError}`);
-//       // We'll continue with the deactivation process even if attachment conversion fails
-//     } else {
-//       convertedAttachments = attachmentsResult.data.convertedAttachments;
-//       originalAttachments = attachmentsResult.data.originalAttachments;
-//     }
-
-//     // Step 2: Get the request body for deactivating the meter
-//     // Clone the paramArgs array to avoid modifying the original request
-//     const paramArgs = req.body.paramArgs ? [...req.body.paramArgs] : [];
-
-//     // Validate that paramArgs exists and is an array
-//     if (!paramArgs || !Array.isArray(paramArgs)) {
-//       return res
-//         .status(400)
-//         .json({ error: "paramArgs is required and must be an array" });
-//     }
-
-//     // Generate a UUID
-//     const WSTrnId = uuidv4();
-//     console.log("Generated UUID:", WSTrnId);
-
-//     // Add the UUID after the 16th element (index 15)
-//     // The position is fixed at index 24 (after the 16th element)
-//     const insertPosition = 24;
-
-//     // Insert the UUID at the specified position
-//     // If the array is shorter than the position, the UUID will be added at the end
-//     if (paramArgs.length >= insertPosition) {
-//       paramArgs.splice(insertPosition, 0, WSTrnId);
-//     } else {
-//       // If the array is shorter than expected, append the UUID
-//       paramArgs.push(WSTrnId);
-//       console.warn(
-//         `Warning: paramArgs array is shorter than expected (${paramArgs.length} < ${insertPosition}). UUID added at the end.`
-//       );
-//     }
-
-//     const requestBody = {
-//       codeUnitName: "Integration",
-//       functionName: "ActivateMeter",
-//       paramArgs: paramArgs,
-//     };
-
-//     // Print the request body to console for debugging
-//     console.log(
-//       "Request body for ServiceNow API:",
-//       JSON.stringify(requestBody, null, 2)
-//     );
-
-//     // Step 3: Call ServiceNow API to deactivate the meter with query parameters
-//     const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
-//       ENDPOINTS.ACTIVATE_METER,
-//       requestBody,
-//       "post",
-//       false,
-//       { user_email: userEmail, record_sys_id: recordSysId }
-//     );
-
-//     // If ServiceNow returns an error, return it as a response
-//     if (serviceNowResponse.error) {
-//       return res.status(serviceNowResponse.status || 500).json({
-//         error: serviceNowResponse.error,
-//         attachmentsError: attachmentsError,
-//         convertedAttachments: convertedAttachments,
-//       });
-//     }
-
-//     // Step 4: Return the response from ServiceNow along with the converted attachments
-//     res.json({
-//       ...serviceNowResponse,
-//       attachmentsError: attachmentsError,
-//       convertedAttachments: convertedAttachments,
-//       originalAttachments: originalAttachments,
-//     });
-//   } catch (error) {
-//     console.error("Error in /ActivateMeter:", error.message);
-//     res.status(500).json({ error: "Failed to activate meter" });
-//   }
-// };
-
-// /**
-//  * Function to deactivate a meter
-//  * @param {object} req - Express request object
-//  * @param {object} res - Express response object
-//  */
-// const reactivateMeter = async (req, res) => {
-//   try {
-//     // Get user_email and record_Sys_id from query parameters
-//     const userEmail = req.query.user_email;
-//     const recordSysId = req.query.record_sys_id;
-
-//     // Validate query parameters
-//     if (!userEmail || !recordSysId) {
-//       return res.status(400).json({
-//         error:
-//           "Missing required query parameters: user_email and record_sys_id are required",
-//       });
-//     }
-
-//     // Step 1: Get attachments and convert PDF to Word
-//     const attachmentsResult = await getRecordAttachmentsAndConvert(recordSysId);
-
-//     // If there was an error getting or converting attachments, continue with the deactivation
-//     // but include the error in the response
-//     let attachmentsError = null;
-//     let convertedAttachments = null;
-//     let originalAttachments = null;
-
-//     if (!attachmentsResult.success) {
-//       attachmentsError = attachmentsResult.error;
-//       console.warn(`Warning: ${attachmentsError}`);
-//       // We'll continue with the deactivation process even if attachment conversion fails
-//     } else {
-//       convertedAttachments = attachmentsResult.data.convertedAttachments;
-//       originalAttachments = attachmentsResult.data.originalAttachments;
-//     }
-
-//     // Step 2: Get the request body for deactivating the meter
-//     // Clone the paramArgs array to avoid modifying the original request
-//     const paramArgs = req.body.paramArgs ? [...req.body.paramArgs] : [];
-
-//     // Validate that paramArgs exists and is an array
-//     if (!paramArgs || !Array.isArray(paramArgs)) {
-//       return res
-//         .status(400)
-//         .json({ error: "paramArgs is required and must be an array" });
-//     }
-
-//     // Generate a UUID
-//     const WSTrnId = uuidv4();
-//     console.log("Generated UUID:", WSTrnId);
-
-//     // Add the UUID after the 16th element (index 15)
-//     // The position is fixed at index 24 (after the 16th element)
-//     const insertPosition = 16;
-
-//     // Insert the UUID at the specified position
-//     // If the array is shorter than the position, the UUID will be added at the end
-//     if (paramArgs.length >= insertPosition) {
-//       paramArgs.splice(insertPosition, 0, WSTrnId);
-//     } else {
-//       // If the array is shorter than expected, append the UUID
-//       paramArgs.push(WSTrnId);
-//       console.warn(
-//         `Warning: paramArgs array is shorter than expected (${paramArgs.length} < ${insertPosition}). UUID added at the end.`
-//       );
-//     }
-
-//     const requestBody = {
-//       codeUnitName: "Integration",
-//       functionName: "ReactivateMeter",
-//       paramArgs: paramArgs,
-//     };
-
-//     // Print the request body to console for debugging
-//     console.log(
-//       "Request body for ServiceNow API:",
-//       JSON.stringify(requestBody, null, 2)
-//     );
-
-//     // Step 3: Call ServiceNow API to deactivate the meter with query parameters
-//     const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
-//       ENDPOINTS.REACTIVATE_METER,
-//       requestBody,
-//       "post",
-//       false,
-//       { user_email: userEmail, record_sys_id: recordSysId }
-//     );
-
-//     // If ServiceNow returns an error, return it as a response
-//     if (serviceNowResponse.error) {
-//       return res.status(serviceNowResponse.status || 500).json({
-//         error: serviceNowResponse.error,
-//         attachmentsError: attachmentsError,
-//         convertedAttachments: convertedAttachments,
-//       });
-//     }
-
-//     // Step 4: Return the response from ServiceNow along with the converted attachments
-//     res.json({
-//       ...serviceNowResponse,
-//       attachmentsError: attachmentsError,
-//       convertedAttachments: convertedAttachments,
-//       originalAttachments: originalAttachments,
-//     });
-//   } catch (error) {
-//     console.error("Error in /ActivateMeter:", error.message);
-//     res.status(500).json({ error: "Failed to activate meter" });
-//   }
-// };
-
-// /**
-//  * Function to deactivate a meter
-//  * @param {object} req - Express request object
-//  * @param {object} res - Express response object
-//  */
-// const replaceMeter = async (req, res) => {
-//   try {
-//     // Get user_email and record_Sys_id from query parameters
-//     const userEmail = req.query.user_email;
-//     const recordSysId = req.query.record_sys_id;
-
-//     // Validate query parameters
-//     if (!userEmail || !recordSysId) {
-//       return res.status(400).json({
-//         error:
-//           "Missing required query parameters: user_email and record_sys_id are required",
-//       });
-//     }
-
-//     // Step 1: Get attachments and convert PDF to Word
-//     const attachmentsResult = await getRecordAttachmentsAndConvert(recordSysId);
-
-//     // If there was an error getting or converting attachments, continue with the deactivation
-//     // but include the error in the response
-//     let attachmentsError = null;
-//     let convertedAttachments = null;
-//     let originalAttachments = null;
-
-//     if (!attachmentsResult.success) {
-//       attachmentsError = attachmentsResult.error;
-//       console.warn(`Warning: ${attachmentsError}`);
-//       // We'll continue with the deactivation process even if attachment conversion fails
-//     } else {
-//       convertedAttachments = attachmentsResult.data.convertedAttachments;
-//       originalAttachments = attachmentsResult.data.originalAttachments;
-//     }
-
-//     // Step 2: Get the request body for deactivating the meter
-//     // Clone the paramArgs array to avoid modifying the original request
-//     const paramArgs = req.body.paramArgs ? [...req.body.paramArgs] : [];
-
-//     // Validate that paramArgs exists and is an array
-//     if (!paramArgs || !Array.isArray(paramArgs)) {
-//       return res
-//         .status(400)
-//         .json({ error: "paramArgs is required and must be an array" });
-//     }
-
-//     // Generate a UUID
-//     const WSTrnId = uuidv4();
-//     console.log("Generated UUID:", WSTrnId);
-
-//     // Add the UUID after the 16th element (index 15)
-//     // The position is fixed at index 23 (after the 16th element)
-//     const insertPosition = 23;
-
-//     // Insert the UUID at the specified position
-//     // If the array is shorter than the position, the UUID will be added at the end
-//     if (paramArgs.length >= insertPosition) {
-//       paramArgs.splice(insertPosition, 0, WSTrnId);
-//     } else {
-//       // If the array is shorter than expected, append the UUID
-//       paramArgs.push(WSTrnId);
-//       console.warn(
-//         `Warning: paramArgs array is shorter than expected (${paramArgs.length} < ${insertPosition}). UUID added at the end.`
-//       );
-//     }
-
-//     const requestBody = {
-//       codeUnitName: "Integration",
-//       functionName: "ReplaceMeter",
-//       paramArgs: paramArgs,
-//     };
-
-//     // Print the request body to console for debugging
-//     console.log(
-//       "Request body for ServiceNow API:",
-//       JSON.stringify(requestBody, null, 2)
-//     );
-
-//     // Step 3: Call ServiceNow API to deactivate the meter with query parameters
-//     const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
-//       ENDPOINTS.REPLACE_METER,
-//       requestBody,
-//       "post",
-//       false,
-//       { user_email: userEmail, record_sys_id: recordSysId }
-//     );
-
-//     // If ServiceNow returns an error, return it as a response
-//     if (serviceNowResponse.error) {
-//       return res.status(serviceNowResponse.status || 500).json({
-//         error: serviceNowResponse.error,
-//         attachmentsError: attachmentsError,
-//         convertedAttachments: convertedAttachments,
-//       });
-//     }
-
-//     // Step 4: Return the response from ServiceNow along with the converted attachments
-//     res.json({
-//       ...serviceNowResponse,
-//       attachmentsError: attachmentsError,
-//       convertedAttachments: convertedAttachments,
-//       originalAttachments: originalAttachments,
-//     });
-//   } catch (error) {
-//     console.error("Error in /ActivateMeter:", error.message);
-//     res.status(500).json({ error: "Failed to activate meter" });
-//   }
-// };
-
-// /**
-//  * Function to deactivate a meter
-//  * @param {object} req - Express request object
-//  * @param {object} res - Express response object
-//  */
-// const createWorksheet = async (req, res) => {
-//   try {
-//     // Get user_email and record_Sys_id from query parameters
-//     const userEmail = req.query.user_email;
-//     const recordSysId = req.query.record_sys_id;
-
-//     // Validate query parameters
-//     if (!userEmail || !recordSysId) {
-//       return res.status(400).json({
-//         error:
-//           "Missing required query parameters: user_email and record_sys_id are required",
-//       });
-//     }
-
-//     // Step 1: Get attachments and convert PDF to Word
-//     const attachmentsResult = await getRecordAttachmentsAndConvert(recordSysId);
-
-//     // If there was an error getting or converting attachments, continue with the deactivation
-//     // but include the error in the response
-//     let attachmentsError = null;
-//     let convertedAttachments = null;
-//     let originalAttachments = null;
-
-//     if (!attachmentsResult.success) {
-//       attachmentsError = attachmentsResult.error;
-//       console.warn(`Warning: ${attachmentsError}`);
-//       // We'll continue with the deactivation process even if attachment conversion fails
-//     } else {
-//       convertedAttachments = attachmentsResult.data.convertedAttachments;
-//       originalAttachments = attachmentsResult.data.originalAttachments;
-//     }
-
-//     // Step 2: Get the request body for deactivating the meter
-//     // Clone the paramArgs array to avoid modifying the original request
-//     const paramArgs = req.body.paramArgs ? [...req.body.paramArgs] : [];
-
-//     // Validate that paramArgs exists and is an array
-//     if (!paramArgs || !Array.isArray(paramArgs)) {
-//       return res
-//         .status(400)
-//         .json({ error: "paramArgs is required and must be an array" });
-//     }
-
-//     // Generate a UUID
-//     const WSTrnId = uuidv4();
-//     console.log("Generated UUID:", WSTrnId);
-
-//     // The position is fixed at index 19 (after the 19th element)
-//     const insertPosition = 19;
-
-//     // Insert the UUID at the specified position
-//     // If the array is shorter than the position, the UUID will be added at the end
-//     if (paramArgs.length >= insertPosition) {
-//       paramArgs.splice(insertPosition, 0, WSTrnId);
-//     } else {
-//       // If the array is shorter than expected, append the UUID
-//       paramArgs.push(WSTrnId);
-//       console.warn(
-//         `Warning: paramArgs array is shorter than expected (${paramArgs.length} < ${insertPosition}). UUID added at the end.`
-//       );
-//     }
-
-//     const requestBody = {
-//       codeUnitName: "Integration",
-//       functionName: "CreateWorksheet",
-//       paramArgs: paramArgs,
-//     };
-
-//     // Print the request body to console for debugging
-//     console.log(
-//       "Request body for ServiceNow API:",
-//       JSON.stringify(requestBody, null, 2)
-//     );
-
-//     // Step 3: Call ServiceNow API to deactivate the meter with query parameters
-//     const serviceNowResponse = await fetchDataFromNavisionThrowServiceNow(
-//       ENDPOINTS.CREATE_WORKSHEET,
-//       requestBody,
-//       "post",
-//       false,
-//       { user_email: userEmail, record_sys_id: recordSysId }
-//     );
-
-//     // If ServiceNow returns an error, return it as a response
-//     if (serviceNowResponse.error) {
-//       return res.status(serviceNowResponse.status || 500).json({
-//         error: serviceNowResponse.error,
-//         attachmentsError: attachmentsError,
-//         convertedAttachments: convertedAttachments,
-//       });
-//     }
-
-//     // Step 4: Return the response from ServiceNow along with the converted attachments
-//     res.json({
-//       ...serviceNowResponse,
-//       attachmentsError: attachmentsError,
-//       convertedAttachments: convertedAttachments,
-//       originalAttachments: originalAttachments,
-//     });
-//   } catch (error) {
-//     console.error("Error in /CreateWorksheet:", error.message);
-//     res.status(500).json({ error: "Failed to create worksheet" });
-//   }
-// };
-
-
+const fs = require('fs');
+const path = require('path');
 const deactivateMeter = async (req, res) => {
   try {
     // Get user_email and record_Sys_id from query parameters
     const userEmail = req.query.user_email;
     const recordSysId = req.query.record_sys_id;
-
+    const ikasp = req.query.ikasp;
     // Validate query parameters
     if (!userEmail || !recordSysId) {
       return res.status(400).json({
@@ -1393,10 +784,18 @@ const deactivateMeter = async (req, res) => {
           "Missing required query parameters: user_email and record_sys_id are required",
       });
     }
+    try {
+      console.log("[INFO] Merging attachments for record:", recordSysId);
+      const mergeResult = await uploadService.mergeAttachments(recordSysId, ikasp);
+      console.log("[INFO] Attachments merged successfully:", mergeResult.success);
+    } catch (mergeError) {
+      // If merging fails, log the error but continue with the process
+      console.error("[WARN] Error merging attachments:", mergeError.message);
+      // We don't want to fail the entire operation if merging fails
+    }
 
-    // Step 1: Get attachments and convert PDF to Word
+    console.log("Get attachments and convert PDF to Word");
     const attachmentsResult = await getRecordAttachmentsAndConvert(recordSysId);
-    //console.log('Fetched Attachment ' + JSON.stringify(attachmentsResult))
     // If there was an error getting or converting attachments, continue with the deactivation
     // but include the error in the response
     let attachmentsError = null;
@@ -1414,7 +813,7 @@ const deactivateMeter = async (req, res) => {
 
     // Handle document upload
     const uploadResult = await handleDocumentUpload(userEmail, recordSysId, convertedAttachments);
-    
+
     if (uploadResult.error) {
       return res
         .status(uploadResult.status || 500)
@@ -1508,7 +907,7 @@ const activateMeter = async (req, res) => {
     // Get user_email and record_Sys_id from query parameters
     const userEmail = req.query.user_email;
     const recordSysId = req.query.record_sys_id;
-
+    const ikasp = req.query.ikasp;
     // Validate query parameters
     if (!userEmail || !recordSysId) {
       return res.status(400).json({
@@ -1516,6 +915,16 @@ const activateMeter = async (req, res) => {
           "Missing required query parameters: user_email and record_sys_id are required",
       });
     }
+    try {
+      console.log("[INFO] Merging attachments for record:", recordSysId);
+      const mergeResult = await uploadService.mergeAttachments(recordSysId, ikasp);
+      console.log("[INFO] Attachments merged successfully:", mergeResult.success);
+    } catch (mergeError) {
+      // If merging fails, log the error but continue with the process
+      console.error("[WARN] Error merging attachments:", mergeError.message);
+      // We don't want to fail the entire operation if merging fails
+    }
+
 
     // Step 1: Get attachments and convert PDF to Word
     const attachmentsResult = await getRecordAttachmentsAndConvert(recordSysId);
@@ -1537,7 +946,7 @@ const activateMeter = async (req, res) => {
 
     // Handle document upload
     const uploadResult = await handleDocumentUpload(userEmail, recordSysId, convertedAttachments);
-    
+
     if (uploadResult.error) {
       return res
         .status(uploadResult.status || 500)
@@ -1630,13 +1039,22 @@ const reactivateMeter = async (req, res) => {
     // Get user_email and record_Sys_id from query parameters
     const userEmail = req.query.user_email;
     const recordSysId = req.query.record_sys_id;
-
+    const ikasp = req.query.ikasp;
     // Validate query parameters
     if (!userEmail || !recordSysId) {
       return res.status(400).json({
         error:
           "Missing required query parameters: user_email and record_sys_id are required",
       });
+    }
+    try {
+      console.log("[INFO] Merging attachments for record:", recordSysId);
+      const mergeResult = await uploadService.mergeAttachments(recordSysId, ikasp);
+      console.log("[INFO] Attachments merged successfully:", mergeResult.success);
+    } catch (mergeError) {
+      // If merging fails, log the error but continue with the process
+      console.error("[WARN] Error merging attachments:", mergeError.message);
+      // We don't want to fail the entire operation if merging fails
     }
 
     // Step 1: Get attachments and convert PDF to Word
@@ -1659,7 +1077,7 @@ const reactivateMeter = async (req, res) => {
 
     // Handle document upload
     const uploadResult = await handleDocumentUpload(userEmail, recordSysId, convertedAttachments);
-    
+
     if (uploadResult.error) {
       return res
         .status(uploadResult.status || 500)
@@ -1752,13 +1170,22 @@ const replaceMeter = async (req, res) => {
     // Get user_email and record_Sys_id from query parameters
     const userEmail = req.query.user_email;
     const recordSysId = req.query.record_sys_id;
-
+    const ikasp = req.query.ikasp;
     // Validate query parameters
     if (!userEmail || !recordSysId) {
       return res.status(400).json({
         error:
           "Missing required query parameters: user_email and record_sys_id are required",
       });
+    }
+    try {
+      console.log("[INFO] Merging attachments for record:", recordSysId);
+      const mergeResult = await uploadService.mergeAttachments(recordSysId, ikasp);
+      console.log("[INFO] Attachments merged successfully:", mergeResult.success);
+    } catch (mergeError) {
+      // If merging fails, log the error but continue with the process
+      console.error("[WARN] Error merging attachments:", mergeError.message);
+      // We don't want to fail the entire operation if merging fails
     }
 
     // Step 1: Get attachments and convert PDF to Word
@@ -1781,7 +1208,7 @@ const replaceMeter = async (req, res) => {
 
     // Handle document upload
     const uploadResult = await handleDocumentUpload(userEmail, recordSysId, convertedAttachments);
-    
+
     if (uploadResult.error) {
       return res
         .status(uploadResult.status || 500)
@@ -1874,13 +1301,22 @@ const createWorksheet = async (req, res) => {
     // Get user_email and record_Sys_id from query parameters
     const userEmail = req.query.user_email;
     const recordSysId = req.query.record_sys_id;
-
+    const ikasp = req.query.ikasp;
     // Validate query parameters
     if (!userEmail || !recordSysId) {
       return res.status(400).json({
         error:
           "Missing required query parameters: user_email and record_sys_id are required",
       });
+    }
+    try {
+      console.log("[INFO] Merging attachments for record:", recordSysId);
+      const mergeResult = await uploadService.mergeAttachments(recordSysId, ikasp);
+      console.log("[INFO] Attachments merged successfully:", mergeResult.success);
+    } catch (mergeError) {
+      // If merging fails, log the error but continue with the process
+      console.error("[WARN] Error merging attachments:", mergeError.message);
+      // We don't want to fail the entire operation if merging fails
     }
 
     // Step 1: Get attachments and convert PDF to Word
@@ -1903,7 +1339,7 @@ const createWorksheet = async (req, res) => {
 
     // Handle document upload
     const uploadResult = await handleDocumentUpload(userEmail, recordSysId, convertedAttachments);
-    
+
     if (uploadResult.error) {
       return res
         .status(uploadResult.status || 500)
